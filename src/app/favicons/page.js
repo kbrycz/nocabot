@@ -2,9 +2,13 @@
 
 import React, { useState, useRef } from "react"
 import { PlusIcon, XMarkIcon } from "@heroicons/react/20/solid"
+import { SERVER_BASE_URL } from "@/config"
 
 export default function FaviconsPage() {
   const [selectedImage, setSelectedImage] = useState(null)
+  const [errorMsg, setErrorMsg] = useState(null)
+  const [successMsg, setSuccessMsg] = useState(null)
+  const [isGenerating, setIsGenerating] = useState(false)
   const fileInputRef = useRef(null)
 
   const handleFileSelect = (e) => {
@@ -12,6 +16,8 @@ export default function FaviconsPage() {
     if (file) {
       const url = URL.createObjectURL(file)
       setSelectedImage({ file, url })
+      setErrorMsg(null)
+      setSuccessMsg(null)
     }
   }
 
@@ -23,14 +29,52 @@ export default function FaviconsPage() {
     fileInputRef.current?.click()
   }
 
-  const handleDownloadFavicon = () => {
+  const handleDownloadFavicon = async () => {
     if (!selectedImage) return
-    // Eventually you'd generate .ico or PNG in logic
-    alert("Download Favicon logic not implemented yet.")
+
+    setIsGenerating(true)
+    setErrorMsg(null)
+    setSuccessMsg(null)
+
+    try {
+      // Build form data
+      const formData = new FormData()
+      formData.append("image", selectedImage.file)
+
+      // POST to /favicon
+      const res = await fetch(`${SERVER_BASE_URL}/favicon`, {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(`Server error: ${res.status} - ${errorText}`)
+      }
+
+      // We'll get back a .ico (or .png if you prefer)
+      const blob = await res.blob()
+      const faviconUrl = URL.createObjectURL(blob)
+
+      // "Download" it to the user's computer
+      const link = document.createElement("a")
+      link.href = faviconUrl
+      link.download = "favicon.ico"
+      link.click()
+
+      setSuccessMsg("Favicon generated & downloaded successfully!")
+    } catch (error) {
+      console.error("Favicon generation failed:", error)
+      setErrorMsg(`Favicon generation failed: ${error.message}`)
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   const handleRemove = () => {
     setSelectedImage(null)
+    setErrorMsg(null)
+    setSuccessMsg(null)
   }
 
   return (
@@ -40,9 +84,12 @@ export default function FaviconsPage() {
         Upload an image to generate or download a Favicon.
       </p>
 
+      {/* Error/Success messages */}
+      {errorMsg && <p className="mt-4 text-sm text-red-600">{errorMsg}</p>}
+      {successMsg && <p className="mt-4 text-sm text-green-600">{successMsg}</p>}
+
       <div className="mt-8">
         {selectedImage ? (
-          // Show preview + "Download Favicon" & "Replace Image"
           <div className="relative flex flex-col items-center gap-4">
             <button
               type="button"
@@ -63,9 +110,10 @@ export default function FaviconsPage() {
               <button
                 type="button"
                 onClick={handleDownloadFavicon}
+                disabled={isGenerating}
                 className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
               >
-                Download Favicon
+                {isGenerating ? "Generating..." : "Download Favicon"}
               </button>
               <button
                 type="button"

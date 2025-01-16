@@ -1,12 +1,17 @@
-// src/components/ui/ImageUploaderForRemoveBg.js
 "use client"
 
 import React, { useRef, useState } from "react"
 import { PlusIcon, XMarkIcon } from "@heroicons/react/20/solid"
+import { SERVER_BASE_URL } from "@/config"
 
 export default function ImageUploaderForRemoveBg() {
   const [selectedImage, setSelectedImage] = useState(null)
-  const [removed, setRemoved] = useState(false) // has the background been removed yet?
+  const [removed, setRemoved] = useState(false) 
+  const [isRemoving, setIsRemoving] = useState(false)
+
+  const [errorMsg, setErrorMsg] = useState(null)
+  const [successMsg, setSuccessMsg] = useState(null)
+
   const fileInputRef = useRef(null)
 
   const handleFileSelect = (e) => {
@@ -14,7 +19,9 @@ export default function ImageUploaderForRemoveBg() {
     if (file) {
       const url = URL.createObjectURL(file)
       setSelectedImage({ file, url })
-      setRemoved(false) // reset if user picks new file
+      setRemoved(false)
+      setErrorMsg(null)
+      setSuccessMsg(null)
     }
   }
 
@@ -22,10 +29,44 @@ export default function ImageUploaderForRemoveBg() {
     fileInputRef.current?.click()
   }
 
-  const handleRemoveBg = () => {
-    // Placeholder for background removal logic
-    alert("Removing background... (not implemented)")
-    setRemoved(true)
+  const handleRemoveBg = async () => {
+    if (!selectedImage) return
+
+    setIsRemoving(true)
+    setErrorMsg(null)
+    setSuccessMsg(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("image", selectedImage.file)
+
+      const res = await fetch(`${SERVER_BASE_URL}/remove_bg`, {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(`Server error: ${res.status} - ${errorText}`)
+      }
+
+      // The server returns a PNG with background removed
+      const blob = await res.blob()
+      const newUrl = URL.createObjectURL(blob)
+
+      // Update local state to show the new BG-removed image
+      setSelectedImage((prev) => ({
+        ...prev,
+        url: newUrl,
+      }))
+      setRemoved(true)
+      setSuccessMsg("Background successfully removed!")
+    } catch (error) {
+      console.error("Remove BG failed:", error)
+      setErrorMsg(`Remove BG failed: ${error.message}`)
+    } finally {
+      setIsRemoving(false)
+    }
   }
 
   const handleReplace = () => {
@@ -33,11 +74,8 @@ export default function ImageUploaderForRemoveBg() {
   }
 
   const handleDownload = () => {
-    if (!selectedImage) return
-    if (!removed) return
+    if (!selectedImage || !removed) return
 
-    // For now, just re-download the original
-    // In real logic, you'd link to the "removed background" version
     const link = document.createElement("a")
     link.href = selectedImage.url
     link.download = "image-no-bg.png"
@@ -47,10 +85,16 @@ export default function ImageUploaderForRemoveBg() {
   const handleRemoveImage = () => {
     setSelectedImage(null)
     setRemoved(false)
+    setErrorMsg(null)
+    setSuccessMsg(null)
   }
 
   return (
     <div className="flex flex-col items-center">
+      {/* Error/Success messages */}
+      {errorMsg && <p className="mb-2 text-sm text-red-600">{errorMsg}</p>}
+      {successMsg && <p className="mb-2 text-sm text-green-600">{successMsg}</p>}
+
       {selectedImage ? (
         <div className="relative flex flex-col items-center gap-4">
           {/* 'X' corner button */}
@@ -74,9 +118,10 @@ export default function ImageUploaderForRemoveBg() {
               <button
                 type="button"
                 onClick={handleRemoveBg}
+                disabled={isRemoving}
                 className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
               >
-                Remove Background
+                {isRemoving ? "Removing..." : "Remove Background"}
               </button>
             )}
 

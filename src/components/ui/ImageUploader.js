@@ -13,7 +13,7 @@ export default function ImageUploader({ onImageSelected, onRemoveImage }) {
     if (file) {
       const url = URL.createObjectURL(file)
       setSelectedImage({ file, url })
-      onImageSelected?.()
+      onImageSelected?.({ file, url })
     }
   }
 

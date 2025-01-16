@@ -8,7 +8,7 @@ export default function RemoveBGPage() {
     <div className="flex flex-col items-center text-center">
       <h1 className="text-5xl font-extrabold text-gray-800">Remove Background</h1>
       <p className="mt-2 text-lg text-gray-600">
-        Automatically remove the background from your images. (Logic coming soon!)
+        Automatically remove the background from your images.
       </p>
 
       <div className="mt-8">

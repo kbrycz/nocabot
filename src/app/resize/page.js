@@ -1,8 +1,7 @@
-// src/app/resize/page.js
-"use client"
+"use client";
 
-import React from "react"
-import ImageUploaderForResize from "@/components/ui/ImageUploaderForResize"
+import React from "react";
+import ImageUploaderForResize from "@/components/ui/ImageUploaderForResize";
 
 export default function ResizePage() {
   return (
@@ -16,5 +15,5 @@ export default function ResizePage() {
         <ImageUploaderForResize />
       </div>
     </div>
-  )
+  );
 }

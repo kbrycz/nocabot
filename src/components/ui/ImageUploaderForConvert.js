@@ -1,13 +1,18 @@
-// src/components/ui/ImageUploaderForConvert.js
 "use client"
 
 import React, { useRef, useState } from "react"
 import { PlusIcon, XMarkIcon } from "@heroicons/react/20/solid"
+import { SERVER_BASE_URL } from "@/config"
 
 export default function ImageUploaderForConvert() {
   const [selectedImage, setSelectedImage] = useState(null)
   const [convertedFormat, setConvertedFormat] = useState("png")
   const [converted, setConverted] = useState(false)
+
+  const [isConverting, setIsConverting] = useState(false)
+  const [errorMsg, setErrorMsg] = useState(null)
+  const [successMsg, setSuccessMsg] = useState(null)
+
   const fileInputRef = useRef(null)
 
   const handleFileSelect = (e) => {
@@ -15,7 +20,9 @@ export default function ImageUploaderForConvert() {
     if (file) {
       const url = URL.createObjectURL(file)
       setSelectedImage({ file, url })
-      setConverted(false) // reset if previously converted
+      setConverted(false)
+      setErrorMsg(null)
+      setSuccessMsg(null)
     }
   }
 
@@ -27,18 +34,54 @@ export default function ImageUploaderForConvert() {
     fileInputRef.current?.click()
   }
 
-  const handleConvert = () => {
-    // Stub: "convert" logic would go here
-    // We'll just set 'converted' = true to show the download button
-    setConverted(true)
-    alert(`Converting to ${convertedFormat}... (not implemented yet)`)
+  const handleConvert = async () => {
+    if (!selectedImage) return
+
+    setIsConverting(true)
+    setConverted(false)
+    setErrorMsg(null)
+    setSuccessMsg(null)
+
+    try {
+      // Build form data
+      const formData = new FormData()
+      formData.append("image", selectedImage.file)
+      formData.append("target_format", convertedFormat)
+
+      // POST to /convert
+      const res = await fetch(`${SERVER_BASE_URL}/convert`, {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(`Server error: ${res.status} - ${errorText}`)
+      }
+
+      // Get the converted image as a Blob
+      const blob = await res.blob()
+      const convertedUrl = URL.createObjectURL(blob)
+
+      // Update local preview
+      setSelectedImage((prev) => ({
+        ...prev,
+        url: convertedUrl,
+      }))
+      setConverted(true)
+      setSuccessMsg(`Successfully converted to ${convertedFormat}!`)
+    } catch (error) {
+      console.error("Conversion failed:", error)
+      setErrorMsg(`Conversion failed: ${error.message}`)
+    } finally {
+      setIsConverting(false)
+    }
   }
 
   const handleDownload = () => {
-    if (!selectedImage) return
-    if (!converted) return
+    if (!selectedImage || !converted) return
 
-    // Pretend we have a newly converted image. For now, just re-download original.
+    // We'll name the file "converted.<format>"
     const link = document.createElement("a")
     link.href = selectedImage.url
     link.download = `converted.${convertedFormat}`
@@ -48,10 +91,16 @@ export default function ImageUploaderForConvert() {
   const handleRemove = () => {
     setSelectedImage(null)
     setConverted(false)
+    setErrorMsg(null)
+    setSuccessMsg(null)
   }
 
   return (
     <div className="flex flex-col items-center">
+      {/* Error/Success messages */}
+      {errorMsg && <p className="mb-2 text-sm text-red-600">{errorMsg}</p>}
+      {successMsg && <p className="mb-2 text-sm text-green-600">{successMsg}</p>}
+
       {selectedImage ? (
         <div className="relative flex flex-col items-center gap-4">
           {/* 'X' corner button */}
@@ -78,7 +127,9 @@ export default function ImageUploaderForConvert() {
                 value={convertedFormat}
                 onChange={(e) => {
                   setConvertedFormat(e.target.value)
-                  setConverted(false) // if user changes format, reset converted
+                  setConverted(false) // if user changes format, reset
+                  setErrorMsg(null)
+                  setSuccessMsg(null)
                 }}
                 className="rounded border border-gray-300 bg-white px-2 py-1 text-sm focus:outline-none"
               >
@@ -88,6 +139,7 @@ export default function ImageUploaderForConvert() {
                 <option value="webp">WEBP</option>
                 <option value="bmp">BMP</option>
                 <option value="tiff">TIFF</option>
+                {/* <option value="heic">HEIC</option>  <-- If you install pillow-heif */}
               </select>
             </div>
 
@@ -96,9 +148,10 @@ export default function ImageUploaderForConvert() {
                 <button
                   type="button"
                   onClick={handleConvert}
+                  disabled={isConverting}
                   className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
                 >
-                  Convert
+                  {isConverting ? "Converting..." : "Convert"}
                 </button>
               )}
 
