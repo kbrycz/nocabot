@@ -1,19 +1,16 @@
-"use client"
-
-import React from "react"
+"use client";
+import React from "react";
 
 export default function ProfilePage() {
   return (
-    <div className="flex flex-col items-center text-center">
-      {/* Big Title + Subtitle */}
-      <h1 className="text-4xl font-extrabold text-gray-800">Profile Settings</h1>
-      <p className="mt-1 text-sm text-gray-600">
-        Update your personal information and preferences.
-      </p>
+    <div className="relative">
+      <div className="mx-auto mt-10 mb-10 w-full max-w-2xl bg-white p-6 rounded-md shadow ring-1 ring-gray-200">
+        <h1 className="text-4xl font-extrabold text-gray-800 text-center">Profile Settings</h1>
+        <p className="mt-1 text-sm text-gray-600 text-center">
+          Update your personal information and preferences.
+        </p>
 
-      {/* White card with minimal form */}
-      <div className="mt-8 w-full max-w-2xl rounded-lg bg-white p-6 shadow ring-1 ring-gray-200">
-        <form className="space-y-6">
+        <form className="space-y-6 mt-6">
           {/* Name fields */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* First name */}
@@ -95,5 +92,5 @@ export default function ProfilePage() {
         </form>
       </div>
     </div>
-  )
+  );
 }

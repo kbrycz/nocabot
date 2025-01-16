@@ -1,34 +1,33 @@
-"use client"
-
-import React, { useState } from "react"
-import { Switch } from "@headlessui/react"
+"use client";
+import React, { useState } from "react";
+import { Switch } from "@headlessui/react";
 
 export default function SettingsPage() {
-  const [darkMode, setDarkMode] = useState(false)
-  const userPlan = "Pro Plan (Free) - just as example"
-  const [cardNumber, setCardNumber] = useState("")
-  const [expDate, setExpDate] = useState("")
-  const [cvc, setCvc] = useState("")
-  const [billingAddress, setBillingAddress] = useState("")
-
-  const handleSave = (e) => {
-    e.preventDefault()
-    alert("Settings saved (not implemented).")
-  }
+  const [darkMode, setDarkMode] = useState(false);
+  const userPlan = "Pro Plan (Free) - just as example";
+  const [cardNumber, setCardNumber] = useState("");
+  const [expDate, setExpDate] = useState("");
+  const [cvc, setCvc] = useState("");
+  const [billingAddress, setBillingAddress] = useState("");
 
   function classNames(...classes) {
-    return classes.filter(Boolean).join(" ")
+    return classes.filter(Boolean).join(" ");
   }
 
-  return (
-    <div className="flex flex-col items-center text-center">
-      <h1 className="text-4xl font-extrabold text-gray-800">Settings</h1>
-      <p className="mt-1 text-sm text-gray-600">
-        Manage your preferences, plan, and payment information.
-      </p>
+  const handleSave = (e) => {
+    e.preventDefault();
+    alert("Settings saved (not implemented).");
+  };
 
-      <div className="mt-8 w-full max-w-2xl rounded-lg bg-white p-6 shadow ring-1 ring-gray-200">
-        <form onSubmit={handleSave} className="space-y-8">
+  return (
+    <div className="relative">
+      <div className="mx-auto mt-10 mb-10 w-full max-w-2xl bg-white p-6 rounded-md shadow ring-1 ring-gray-200">
+        <h1 className="text-4xl font-extrabold text-gray-800 text-center">Settings</h1>
+        <p className="mt-1 text-sm text-gray-600 text-center">
+          Manage your preferences, plan, and payment information.
+        </p>
+
+        <form onSubmit={handleSave} className="space-y-8 mt-6">
           {/* Theme Toggle */}
           <div className="border-b border-gray-200 pb-4">
             <h2 className="text-base font-semibold text-gray-900">Appearance</h2>
@@ -43,7 +42,7 @@ export default function SettingsPage() {
                 onChange={setDarkMode}
                 className={classNames(
                   darkMode ? "bg-indigo-600" : "bg-gray-200",
-                  "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+                  "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
                 )}
               >
                 <span
@@ -106,7 +105,7 @@ export default function SettingsPage() {
                     id="card-number"
                     value={cardNumber}
                     onChange={(e) => setCardNumber(e.target.value)}
-                    className="block w-full rounded-md border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:outline-indigo-600 sm:text-sm"
+                    className="block w-full rounded-md border border-gray-300 px-3 py-1.5 text-gray-900 focus:outline-indigo-600 sm:text-sm"
                     placeholder="1234 5678 9012 3456"
                   />
                 </div>
@@ -123,7 +122,7 @@ export default function SettingsPage() {
                       id="exp-date"
                       value={expDate}
                       onChange={(e) => setExpDate(e.target.value)}
-                      className="block w-full rounded-md border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:outline-indigo-600 sm:text-sm"
+                      className="block w-full rounded-md border border-gray-300 px-3 py-1.5 text-gray-900 focus:outline-indigo-600 sm:text-sm"
                       placeholder="MM/YY"
                     />
                   </div>
@@ -139,7 +138,7 @@ export default function SettingsPage() {
                       id="cvc"
                       value={cvc}
                       onChange={(e) => setCvc(e.target.value)}
-                      className="block w-full rounded-md border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:outline-indigo-600 sm:text-sm"
+                      className="block w-full rounded-md border border-gray-300 px-3 py-1.5 text-gray-900 focus:outline-indigo-600 sm:text-sm"
                       placeholder="123"
                     />
                   </div>
@@ -156,7 +155,7 @@ export default function SettingsPage() {
                     id="billing-address"
                     value={billingAddress}
                     onChange={(e) => setBillingAddress(e.target.value)}
-                    className="block w-full rounded-md border border-gray-300 px-3 py-1.5 text-gray-900 placeholder:text-gray-400 focus:outline-indigo-600 sm:text-sm"
+                    className="block w-full rounded-md border border-gray-300 px-3 py-1.5 text-gray-900 focus:outline-indigo-600 sm:text-sm"
                     placeholder="123 Main St, City, State"
                   />
                 </div>
@@ -185,7 +184,7 @@ export default function SettingsPage() {
             </button>
             <button
               type="submit"
-              className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+              className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-500"
             >
               Save Changes
             </button>
@@ -193,5 +192,5 @@ export default function SettingsPage() {
         </form>
       </div>
     </div>
-  )
+  );
 }

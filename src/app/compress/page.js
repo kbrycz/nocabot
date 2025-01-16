@@ -1,149 +1,269 @@
-"use client"
-import React, { useState } from "react"
-import ImageUploader from "@/components/ui/ImageUploader"
-import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/20/solid"
-import { SERVER_BASE_URL } from "@/config"  // <<--- Our global server URL
+"use client";
+import React, { useState } from "react";
+import MultipleImageUploader from "@/components/ui/MultipleImageUploader";
+import { SERVER_BASE_URL } from "@/config";
 
 export default function CompressPage() {
-  const [hasImage, setHasImage] = useState(false)
-  const [compressionLevel, setCompressionLevel] = useState(5)
+  const [images, setImages] = useState([]); 
+  // Each item in `images` is an object:
+  // {
+  //   file: File,
+  //   url: string (object URL),
+  //   compressedUrl: string | null,
+  //   compressed: boolean,
+  //   success: boolean,
+  //   errorMsg: string | null
+  // }
 
-  // We'll store selectedImage state here too, so we can access it to compress.
-  // selectedImage = { file, url }
-  const [selectedImage, setSelectedImage] = useState(null)
+  const [compressionLevel, setCompressionLevel] = useState(5);
+  const [isCompressing, setIsCompressing] = useState(false);
 
-  // Track compression
-  const [isCompressing, setIsCompressing] = useState(false)
-  const [isImageCompressed, setIsImageCompressed] = useState(false) // Hide button post-compression
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
 
-  // For user messages
-  const [errorMsg, setErrorMsg] = useState(null)
-  const [successMsg, setSuccessMsg] = useState(null)
+  const increment = () => setCompressionLevel((prev) => Math.min(10, prev + 1));
+  const decrement = () => setCompressionLevel((prev) => Math.max(1, prev - 1));
 
-  const increment = () => setCompressionLevel((prev) => Math.min(10, prev + 1))
-  const decrement = () => setCompressionLevel((prev) => Math.max(1, prev - 1))
+  // Called by the multi-uploader to set images (or show an error if >5).
+  const handleImagesChange = (newImages) => {
+    setImages(newImages);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+  };
 
-  // Callback from ImageUploader
-  const handleImageSelected = (fileObj) => {
-    setSelectedImage(fileObj) // { file, url }
-    setHasImage(true)
-    setIsImageCompressed(false)
-    setErrorMsg(null)
-    setSuccessMsg(null)
-  }
+  const handleClearAll = () => {
+    setImages([]);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+  };
 
-  // Callback from ImageUploader
-  const handleImageRemoved = () => {
-    setSelectedImage(null)
-    setHasImage(false)
-    setIsImageCompressed(false)
-    setErrorMsg(null)
-    setSuccessMsg(null)
-  }
+  const handleCompressAll = async () => {
+    if (!images.length) return;
 
-  const handleCompress = async () => {
-    if (!selectedImage) return
-
-    setIsCompressing(true)
-    setErrorMsg(null)
-    setSuccessMsg(null) // clear any old messages
+    setIsCompressing(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
 
     try {
       // 1) Build form data
-      const formData = new FormData()
-      formData.append("image", selectedImage.file)
-      formData.append("compression_level", compressionLevel)
+      const formData = new FormData();
+      formData.append("compression_level", compressionLevel.toString());
 
-      // 2) POST to Flask server
+      // Append each file
+      images.forEach((img) => {
+        formData.append("images", img.file);
+      });
+
+      // 2) POST to /compress
       const res = await fetch(`${SERVER_BASE_URL}/compress`, {
         method: "POST",
         body: formData,
-      })
+      });
 
-      // If the server responded with an error status
       if (!res.ok) {
-        throw new Error(`Server responded with status ${res.status}`)
+        const text = await res.text();
+        throw new Error(`Server error: ${res.status} - ${text}`);
       }
 
-      // 3) Get back the compressed image as Blob
-      const blob = await res.blob()
+      const data = await res.json();
+      if (!data.images) {
+        throw new Error("No images returned from server.");
+      }
 
-      // 4) Create a new URL for the compressed blob
-      const compressedUrl = URL.createObjectURL(blob)
+      // 3) data.images -> each has { filename, compressed_b64 }
+      const updated = images.map((img, idx) => {
+        const serverImg = data.images[idx];
+        if (serverImg && serverImg.compressed_b64) {
+          // Convert base64 to Blob
+          const binary = atob(serverImg.compressed_b64);
+          const array = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) {
+            array[i] = binary.charCodeAt(i);
+          }
+          const blob = new Blob([array], { type: "image/jpeg" });
+          const compressedUrl = URL.createObjectURL(blob);
 
-      // 5) Update selectedImage to show the compressed version
-      setSelectedImage((prev) => ({
-        ...prev,
-        url: compressedUrl,
-      }))
+          return {
+            ...img,
+            compressed: true,
+            success: true,
+            compressedUrl
+          };
+        } else {
+          return {
+            ...img,
+            compressed: true,
+            success: false,
+            errorMsg: "No compressed data returned.",
+          };
+        }
+      });
 
-      // Mark it compressed
-      setIsImageCompressed(true)
-      setSuccessMsg("Compression successful! The preview below is now compressed.")
+      setImages(updated);
+      setSuccessMsg(`Successfully compressed ${images.length} image(s)!`);
     } catch (error) {
-      console.error("Compression failed", error)
-      setErrorMsg(`Compression failed: ${error.message}`)
+      console.error("Compression error:", error);
+      setErrorMsg(error.message || "Compression failed");
     } finally {
-      setIsCompressing(false)
+      setIsCompressing(false);
     }
-  }
+  };
+
+  // Download a single compressed image
+  const handleDownloadOne = (img) => {
+    if (!img.compressedUrl) return;
+    const link = document.createElement("a");
+    link.href = img.compressedUrl;
+    link.download = `compressed-${img.file.name}`;
+    link.click();
+  };
+
+  // Download all compressed
+  const handleDownloadAll = () => {
+    images.forEach((img) => {
+      if (img.compressed && img.success && img.compressedUrl) {
+        const link = document.createElement("a");
+        link.href = img.compressedUrl;
+        link.download = `compressed-${img.file.name}`;
+        link.click();
+      }
+    });
+  };
+
+  const hasAnyCompressed = images.some((img) => img.compressed && img.success);
 
   return (
-    <div className="flex flex-col items-center text-center">
-      <h1 className="text-5xl font-extrabold text-gray-800">Compress Images</h1>
-      <p className="mt-2 text-lg text-gray-600">
-        Here you can compress images quickly using our Flask backend!
-      </p>
+    <div className="relative">
+      {/* The dotted background is provided by your layout.
+          We'll create a white container with shadow. */}
+      <div className="mx-auto mt-10 mb-10 w-full max-w-4xl bg-white shadow-lg p-8 rounded-md">
+        <h1 className="text-4xl font-extrabold text-gray-800 text-center">Compress Images</h1>
+        <p className="mt-2 text-lg text-gray-600 text-center">
+          You can upload up to 5 images and compress them with a single click!
+        </p>
 
-      {/* Error/Success messages */}
-      {errorMsg && <p className="mt-4 text-sm text-red-600">{errorMsg}</p>}
-      {successMsg && <p className="mt-4 text-sm text-green-600">{successMsg}</p>}
+        {errorMsg && (
+          <div className="mt-4 text-sm text-red-600 text-center">{errorMsg}</div>
+        )}
+        {successMsg && (
+          <div className="mt-4 text-sm text-green-600 text-center">{successMsg}</div>
+        )}
 
-      {/* Show compression scale if we do NOT have an image yet */}
-      {!hasImage && (
-        <div className="mt-6 flex flex-col items-center gap-2">
-          <span className="text-sm text-gray-500">Compression Scale (1-10)</span>
-          <div className="inline-flex items-center gap-4">
+        {/* Compression meter */}
+        <div className="mt-6 flex justify-center">
+          <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={decrement}
-              className="inline-flex items-center rounded-l-md bg-white px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-10"
+              className="inline-flex items-center rounded-l-md bg-gray-100 px-3 py-2 text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-200 focus:z-10"
             >
-              <ChevronLeftIcon aria-hidden="true" className="h-5 w-5" />
+              -
             </button>
-            <span className="w-8 text-center text-lg font-bold text-blue-600">
+            <span className="w-8 text-center text-xl font-bold text-blue-600">
               {compressionLevel}
             </span>
             <button
               type="button"
               onClick={increment}
-              className="inline-flex items-center rounded-r-md bg-white px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-10"
+              className="inline-flex items-center rounded-r-md bg-gray-100 px-3 py-2 text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-200 focus:z-10"
             >
-              <ChevronRightIcon aria-hidden="true" className="h-5 w-5" />
+              +
             </button>
           </div>
         </div>
-      )}
 
-      <div className="mt-8">
-        <ImageUploader
-          onImageSelected={handleImageSelected}
-          onRemoveImage={handleImageRemoved}
-        />
-      </div>
-
-      {/* Show "Compress" button only if we have an image & have not already compressed */}
-      {hasImage && !isImageCompressed && (
-        <div className="mt-6">
-          <button
-            onClick={handleCompress}
-            disabled={isCompressing}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
-          >
-            {isCompressing ? "Compressing..." : "Compress"}
-          </button>
+        {/* Multi-image uploader */}
+        <div className="mt-8">
+          <MultipleImageUploader images={images} onChange={handleImagesChange} />
         </div>
-      )}
+
+        {/* Action Buttons */}
+        {images.length > 0 && (
+          <div className="mt-6 flex flex-col items-center gap-4">
+            {/* Single or multiple compress button */}
+            <button
+              onClick={handleCompressAll}
+              disabled={isCompressing}
+              className="rounded-md bg-indigo-600 px-6 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+            >
+              {isCompressing
+                ? "Compressing..."
+                : images.length === 1
+                ? "Compress"
+                : "Compress All"}
+            </button>
+
+            {/* Download all if any are compressed */}
+            {hasAnyCompressed && (
+              <button
+                onClick={handleDownloadAll}
+                className="rounded-md bg-green-600 px-6 py-2 text-sm font-semibold text-white hover:bg-green-500"
+              >
+                Download All
+              </button>
+            )}
+
+            {/* Clear all */}
+            <button
+              onClick={handleClearAll}
+              className="rounded-md bg-gray-300 px-6 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-400"
+            >
+              Clear All
+            </button>
+          </div>
+        )}
+
+        {/* Thumbnails row with horizontal scroll */}
+        {images.length > 0 && (
+          <div className="mt-8 flex flex-nowrap gap-4 overflow-x-auto">
+            {images.map((img, idx) => (
+              <div
+                key={idx}
+                className="relative w-48 h-48 flex-shrink-0 border rounded-md flex flex-col items-center justify-center bg-gray-50 p-2"
+              >
+                {/* Remove icon (top-right) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newArr = images.filter((_, i) => i !== idx);
+                    setImages(newArr);
+                  }}
+                  className="absolute top-1 right-1 rounded-full bg-gray-200 p-1 text-gray-600 shadow hover:bg-gray-300"
+                >
+                  ✕
+                </button>
+
+                {/* Display the image (compressed if available) */}
+                <img
+                  src={img.compressed && img.success ? img.compressedUrl : img.url}
+                  alt={`img-${idx}`}
+                  className="max-h-32 object-contain"
+                />
+
+                {/* Status text */}
+                {img.compressed && img.success && (
+                  <div className="mt-2 text-green-600 font-semibold">✓ Compressed</div>
+                )}
+                {img.compressed && !img.success && (
+                  <div className="mt-2 text-red-600 text-sm">
+                    {img.errorMsg || "Error"}
+                  </div>
+                )}
+
+                {/* Download button if compressed & successful */}
+                {img.compressed && img.success && (
+                  <button
+                    onClick={() => handleDownloadOne(img)}
+                    className="mt-2 rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-500"
+                  >
+                    Download
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
-  )
+  );
 }
