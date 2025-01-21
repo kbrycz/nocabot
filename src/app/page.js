@@ -1,97 +1,128 @@
 "use client";
+
 import React from "react";
+import {
+  ArrowsPointingInIcon, // Compress
+  ScissorsIcon,          // Resize
+  ArrowsRightLeftIcon,   // Convert
+  PhotoIcon,             // Remove BG
+  GlobeAltIcon,          // Favicons
+  DevicePhoneMobileIcon, // App Icon
+} from "@heroicons/react/24/outline";
+
+function classNames(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
+
+const actions = [
+  {
+    title: "Compress Images",
+    href: "/compress",
+    icon: ArrowsPointingInIcon,
+    iconForeground: "text-purple-700",
+    iconBackground: "bg-purple-50",
+    description: "Reduce file sizes while retaining quality for faster load times.",
+  },
+  {
+    title: "Resize Images",
+    href: "/resize",
+    icon: ScissorsIcon,
+    iconForeground: "text-rose-700",
+    iconBackground: "bg-rose-50",
+    description: "Quickly change dimensions or aspect ratios to fit any usage scenario.",
+  },
+  {
+    title: "Convert Images",
+    href: "/convert",
+    icon: ArrowsRightLeftIcon,
+    iconForeground: "text-sky-700",
+    iconBackground: "bg-sky-50",
+    description: "Switch between PNG, JPG, GIF, WebP, and more with a single click.",
+  },
+  {
+    title: "Remove Background",
+    href: "/remove-bg",
+    icon: PhotoIcon,
+    iconForeground: "text-indigo-700",
+    iconBackground: "bg-indigo-50",
+    description: "Automatically remove backgrounds to highlight your subject (simulated).",
+  },
+  {
+    title: "Generate Favicons",
+    href: "/favicons",
+    icon: GlobeAltIcon,
+    iconForeground: "text-green-700",
+    iconBackground: "bg-green-50",
+    description: "Create multiple favicon sizes and .ico files for perfect branding.",
+  },
+  {
+    title: "App Icon",
+    href: "/app-icon",
+    icon: DevicePhoneMobileIcon,
+    iconForeground: "text-yellow-700",
+    iconBackground: "bg-yellow-50",
+    description: "Transform any image into a 1024×1024 compressed app icon.",
+  },
+];
 
 export default function HomePage() {
   return (
-    <div className="relative">
-      <div className="mx-auto mt-10 mb-10 w-full max-w-7xl bg-white shadow-lg p-8 rounded-md">
-        {/* Main Title & Subtitle */}
-        <h1 className="text-5xl font-extrabold text-gray-800 text-center">Welcome to Nocabot</h1>
+    <div className="mx-auto mt-10 w-full max-w-5xl px-4">
+      {/* Single white background container */}
+      <div className="bg-white p-8 rounded-md shadow-md">
+        <h1 className="text-5xl font-extrabold text-gray-800 text-center">
+          Welcome to Nocabot
+        </h1>
         <p className="mt-2 text-lg text-gray-600 text-center">
-          Transform your images with ease—remove backgrounds, compress, resize, or convert formats.
+          A suite of easy-to-use image tools for every workflow.
         </p>
 
-        {/* 2 x 2 Feature Grid */}
-        <div className="mt-12 grid w-full gap-4 sm:mt-16 lg:grid-cols-2 lg:grid-rows-2">
-          {/* Remove BG */}
-          <div className="relative">
-            <div className="absolute inset-px rounded-lg bg-white" />
-            <div className="relative flex h-full flex-col overflow-hidden rounded-lg shadow ring-1 ring-black/5">
-              <div className="px-8 pt-8 sm:px-10 sm:pt-10">
-                <p className="text-lg font-medium tracking-tight text-gray-950">Remove Background</p>
-                <p className="mt-2 text-sm text-gray-600">
-                  Quickly remove backgrounds from images for a cleaner, more focused look.
-                </p>
+        {/* The actions grid (still within the same white container) */}
+        <div className="mt-8 divide-y divide-gray-200 overflow-hidden rounded-lg bg-gray-100 shadow sm:grid sm:grid-cols-2 sm:gap-px sm:divide-y-0">
+          {actions.map((action, idx) => (
+            <div
+              key={action.title}
+              className={classNames(
+                idx === 0 ? "rounded-tl-lg rounded-tr-lg sm:rounded-tr-none" : "",
+                idx === 1 ? "sm:rounded-tr-lg" : "",
+                idx === actions.length - 2 ? "sm:rounded-bl-lg" : "",
+                idx === actions.length - 1
+                  ? "rounded-bl-lg rounded-br-lg sm:rounded-bl-none"
+                  : "",
+                "group relative bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500"
+              )}
+            >
+              <div>
+                <span
+                  className={classNames(
+                    action.iconBackground,
+                    action.iconForeground,
+                    "inline-flex rounded-lg p-3 ring-4 ring-white"
+                  )}
+                >
+                  <action.icon aria-hidden="true" className="h-6 w-6" />
+                </span>
               </div>
-              <div className="mt-4 flex flex-1 items-center justify-center px-8 pb-8 sm:px-10">
-                <img
-                  className="h-40 w-full max-w-sm rounded object-cover"
-                  src="/images/rm_background.png"
-                  alt="Remove Background"
-                />
+              <div className="mt-8">
+                <h3 className="text-base font-semibold text-gray-900">
+                  <a href={action.href} className="focus:outline-none">
+                    <span aria-hidden="true" className="absolute inset-0" />
+                    {action.title}
+                  </a>
+                </h3>
+                <p className="mt-2 text-sm text-gray-500">{action.description}</p>
               </div>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute right-6 top-6 text-gray-300 group-hover:text-gray-400"
+              >
+                {/* Decorative diagonal icon in top-right corner */}
+                <svg fill="currentColor" viewBox="0 0 24 24" className="h-6 w-6">
+                  <path d="M20 4h1a1 1 0 00-1-1v1zm-1 12a1 1 0 102 0h-2zM8 3a1 1 0 000 2V3zM3.293 19.293a1 1 0 101.414 1.414l-1.414-1.414zM19 4v12h2V4h-2zm1-1H8v2h12V3zm-.707.293l-16 16 1.414 1.414 16-16-1.414-1.414z" />
+                </svg>
+              </span>
             </div>
-          </div>
-
-          {/* Compression */}
-          <div className="relative">
-            <div className="absolute inset-px rounded-lg bg-white" />
-            <div className="relative flex h-full flex-col overflow-hidden rounded-lg shadow ring-1 ring-black/5">
-              <div className="px-8 pt-8 sm:px-10 sm:pt-10">
-                <p className="text-lg font-medium tracking-tight text-gray-950">Compression</p>
-                <p className="mt-2 text-sm text-gray-600">
-                  Reduce file sizes while preserving image quality—perfect for faster load times.
-                </p>
-              </div>
-              <div className="mt-4 flex flex-1 items-center justify-center px-8 pb-8 sm:px-10">
-                <img
-                  className="h-40 w-full max-w-sm rounded object-cover"
-                  src="/images/compress.png"
-                  alt="Compression"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Resize */}
-          <div className="relative">
-            <div className="absolute inset-px rounded-lg bg-white" />
-            <div className="relative flex h-full flex-col overflow-hidden rounded-lg shadow ring-1 ring-black/5">
-              <div className="px-8 pt-8 sm:px-10 sm:pt-10">
-                <p className="text-lg font-medium tracking-tight text-gray-950">Resize</p>
-                <p className="mt-2 text-sm text-gray-600">
-                  Adjust your image dimensions freely or lock aspect ratios with ease.
-                </p>
-              </div>
-              <div className="mt-4 flex flex-1 items-center justify-center px-8 pb-8 sm:px-10">
-                <img
-                  className="h-40 w-full max-w-sm rounded object-cover"
-                  src="/images/resize.png"
-                  alt="Resize"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Convert */}
-          <div className="relative">
-            <div className="absolute inset-px rounded-lg bg-white" />
-            <div className="relative flex h-full flex-col overflow-hidden rounded-lg shadow ring-1 ring-black/5">
-              <div className="px-8 pt-8 sm:px-10 sm:pt-10">
-                <p className="text-lg font-medium tracking-tight text-gray-950">Convert</p>
-                <p className="mt-2 text-sm text-gray-600">
-                  Effortlessly switch between PNG, JPG, GIF, WebP, and more.
-                </p>
-              </div>
-              <div className="mt-4 flex flex-1 items-center justify-center px-8 pb-8 sm:px-10">
-                <img
-                  className="h-40 w-full max-w-sm rounded object-cover"
-                  src="/images/convert.png"
-                  alt="Convert"
-                />
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>

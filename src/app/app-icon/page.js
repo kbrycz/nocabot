@@ -2,34 +2,34 @@
 
 import React, { useState } from "react";
 import { useImageContext } from "@/context/ImageProvider";
-import GlobalUploader from "@/components/ui/GlobalUploader";
 import { SERVER_BASE_URL } from "@/config";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import GlobalUploader from "@/components/ui/GlobalUploader";
 
-export default function ConvertPage() {
+/**
+ * This page sends all uploaded images to /app-icon,
+ * which resizes them to 1024x1024 and compresses at level=5 (quality=50).
+ */
+export default function AppIconPage() {
   const { globalImages, setGlobalImages, clearAllImages } = useImageContext();
-  const [targetFormat, setTargetFormat] = useState("png");
-  const [isConverting, setIsConverting] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [didProcess, setDidProcess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  // Convert all
-  const handleConvertAll = async () => {
+  const handleGenerateAll = async () => {
     if (globalImages.length === 0) return;
-    setIsConverting(true);
-    setDidProcess(false);
+    setIsGenerating(true);
     setErrorMsg(null);
+    setDidProcess(false);
 
     try {
       const formData = new FormData();
-      formData.append("target_format", targetFormat);
-
       globalImages.forEach((img) => {
         formData.append("images", img.file);
       });
 
-      const res = await fetch(`${SERVER_BASE_URL}/convert`, {
+      const res = await fetch(`${SERVER_BASE_URL}/app-icon`, {
         method: "POST",
         body: formData,
       });
@@ -37,53 +37,56 @@ export default function ConvertPage() {
         const text = await res.text();
         throw new Error(`Server error: ${res.status} - ${text}`);
       }
+
       const data = await res.json();
       if (!data.images) {
-        throw new Error("No images returned from server.");
+        throw new Error("No images returned from server");
       }
 
+      // Build new array with updated "url"
       const updated = globalImages.map((img, idx) => {
         const srv = data.images[idx];
-        if (srv?.converted_b64) {
-          const binary = atob(srv.converted_b64);
+        if (srv?.icon_b64) {
+          // Convert base64 to Blob
+          const binary = atob(srv.icon_b64);
           const array = new Uint8Array(binary.length);
           for (let i = 0; i < binary.length; i++) {
             array[i] = binary.charCodeAt(i);
           }
-          const blob = new Blob([array], { type: `image/${targetFormat}` });
+          const blob = new Blob([array], { type: "image/jpeg" });
           const newUrl = URL.createObjectURL(blob);
+
+          // rename with _app_icon
+          const origName = img.file.name.replace(/\.[^/.]+$/, "");
+          const newFile = new File([blob], `${origName}_app_icon.jpg`, {
+            type: "image/jpeg",
+          });
 
           return {
             ...img,
             url: newUrl,
-            file: new File([blob], img.file.name, {
-              type: `image/${targetFormat}`,
-            }),
+            file: newFile,
           };
         }
-        return img;
+        return img; // fallback if something fails
       });
 
       setGlobalImages(updated);
       setDidProcess(true);
     } catch (err) {
-      console.error("Convert error:", err);
-      setErrorMsg(err.message || "Conversion failed");
+      console.error("App Icon error:", err);
+      setErrorMsg(err.message || "App Icon generation failed");
     } finally {
-      setIsConverting(false);
+      setIsGenerating(false);
     }
   };
 
   const handleDownloadOne = (index) => {
     const img = globalImages[index];
     if (!img) return;
-    const origName = img.file.name.replace(/\.[^/.]+$/, "");
-    const ext = `.${targetFormat}`;
-    const newName = `${origName}_converted${ext}`;
-
     const link = document.createElement("a");
     link.href = img.url;
-    link.download = newName;
+    link.download = img.file.name; // already has _app_icon in the name
     link.click();
   };
 
@@ -91,77 +94,47 @@ export default function ConvertPage() {
     if (!didProcess || globalImages.length === 0) return;
 
     const zip = new JSZip();
-    const folder = zip.folder("converted_images");
+    const folder = zip.folder("app_icons");
 
     for (let i = 0; i < globalImages.length; i++) {
       const img = globalImages[i];
       const response = await fetch(img.url);
       const blob = await response.blob();
 
-      const origName = img.file.name.replace(/\.[^/.]+$/, "");
-      const ext = `.${targetFormat}`;
-      const newName = `${origName}_converted${ext}`;
-
-      folder.file(newName, blob);
+      folder.file(img.file.name, blob);
     }
 
     const content = await zip.generateAsync({ type: "blob" });
-    saveAs(content, "converted_images.zip");
+    saveAs(content, "app_icons.zip");
   };
 
   return (
     <div className="mx-auto mt-10 mb-10 w-full max-w-4xl bg-white p-6 rounded-md shadow">
-      <h1 className="text-3xl font-bold text-center text-gray-800">Convert Images</h1>
+      <h1 className="text-3xl font-bold text-center text-gray-800">App Icon</h1>
       <p className="mt-2 text-sm text-center text-gray-600">
-        Upload up to 5 images and choose a new format to convert them.
+        Turn any image into a 1024×1024 compressed app icon (quality=5).
       </p>
 
       {errorMsg && (
         <div className="mt-4 text-center text-sm text-red-600">{errorMsg}</div>
       )}
 
-      {/* Format dropdown */}
-      <div className="mt-6 flex justify-center">
-        <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-          Convert to:
-          <select
-            value={targetFormat}
-            onChange={(e) => {
-              setTargetFormat(e.target.value);
-              setDidProcess(false);
-              setErrorMsg(null);
-            }}
-            className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm shadow-sm"
-          >
-            <option value="png">PNG</option>
-            <option value="jpg">JPG</option>
-            <option value="gif">GIF</option>
-            <option value="webp">WEBP</option>
-            <option value="bmp">BMP</option>
-            <option value="tiff">TIFF</option>
-          </select>
-        </label>
-      </div>
-
       <div className="mt-6">
-        <GlobalUploader
-          didProcess={didProcess}
-          onDownloadOne={handleDownloadOne}
-        />
+        <GlobalUploader didProcess={didProcess} onDownloadOne={handleDownloadOne} />
       </div>
 
       {globalImages.length > 0 && (
         <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
           <button
-            onClick={handleConvertAll}
-            disabled={isConverting}
+            onClick={handleGenerateAll}
+            disabled={isGenerating}
             className="rounded-md bg-indigo-600 px-6 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
           >
-            {isConverting
-              ? "Converting..."
+            {isGenerating
+              ? "Generating..."
               : globalImages.length === 1
-              ? "Convert"
-              : "Convert All"}
+              ? "Generate App Icon"
+              : "Generate All App Icons"}
           </button>
 
           {didProcess && (

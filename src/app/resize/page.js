@@ -1,311 +1,229 @@
 "use client";
 
 import React, { useState } from "react";
-import MultipleImageUploaderForResize from "@/components/ui/MultipleImageUploaderForResize";
+import { useImageContext } from "@/context/ImageProvider";
+import GlobalUploader from "@/components/ui/GlobalUploader";
 import { SERVER_BASE_URL } from "@/config";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
+import { Switch } from "@headlessui/react";
 
 export default function ResizePage() {
-  const [images, setImages] = useState([]);
-  // images = array of objects:
-  // {
-  //   file: File,
-  //   url: string,
-  //   resizedUrl: string | null,
-  //   resized: boolean,
-  //   success: boolean,
-  //   errorMsg: string | null,
-  //   originalWidth: number,
-  //   originalHeight: number
-  // }
+  const { globalImages, setGlobalImages, clearAllImages } = useImageContext();
 
-  // For dimensions
-  const [width, setWidth] = useState(0);
-  const [height, setHeight] = useState(0);
+  const [width, setWidth] = useState(800);
+  const [height, setHeight] = useState(600);
   const [locked, setLocked] = useState(true);
-
-  // We'll store the ratio from the *first* image that was uploaded
-  // so if the user changes width, we adjust height, and vice versa.
-  const [originalRatio, setOriginalRatio] = useState(1);
+  // Suppose ratio is height/width = 600/800 = 0.75
+  const [ratio, setRatio] = useState(0.75);
 
   const [isResizing, setIsResizing] = useState(false);
+  const [didProcess, setDidProcess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [successMsg, setSuccessMsg] = useState(null);
 
-  // Handle dimension changes
   const onChangeWidth = (val) => {
     const newW = parseInt(val || 0, 10);
     setWidth(newW);
     if (locked && newW > 0) {
-      setHeight(Math.round(newW * originalRatio));
+      setHeight(Math.round(newW * ratio));
     }
   };
-
   const onChangeHeight = (val) => {
     const newH = parseInt(val || 0, 10);
     setHeight(newH);
     if (locked && newH > 0) {
-      setWidth(Math.round(newH / originalRatio));
+      setWidth(Math.round(newH / ratio));
     }
   };
 
-  // Called by the multi-uploader when images are added
-  const handleImagesChange = (newImages) => {
-    setImages(newImages);
-    setErrorMsg(null);
-    setSuccessMsg(null);
-
-    // If we have at least one new image, store the ratio from the first
-    if (newImages.length > 0) {
-      const img = newImages[0];
-      if (img.originalWidth && img.originalHeight) {
-        const ratio = img.originalHeight / img.originalWidth;
-        setOriginalRatio(ratio);
-        setWidth(img.originalWidth);
-        setHeight(img.originalHeight);
-      }
-    } else {
-      setWidth(0);
-      setHeight(0);
+  const handleToggleLock = (checked) => {
+    setLocked(checked);
+    if (checked && width > 0) {
+      const newRatio = height / width;
+      setRatio(newRatio || 1);
     }
-  };
-
-  const handleClearAll = () => {
-    setImages([]);
-    setErrorMsg(null);
-    setSuccessMsg(null);
-    setWidth(0);
-    setHeight(0);
   };
 
   const handleResizeAll = async () => {
-    if (!images.length) return;
+    if (globalImages.length === 0) return;
     if (width < 1 || height < 1) {
       setErrorMsg("Width and Height must be greater than 0.");
       return;
     }
-
     setIsResizing(true);
     setErrorMsg(null);
-    setSuccessMsg(null);
+    setDidProcess(false);
 
     try {
-      // Build form data
       const formData = new FormData();
       formData.append("width", width.toString());
       formData.append("height", height.toString());
 
-      images.forEach((img) => {
+      globalImages.forEach((img) => {
         formData.append("images", img.file);
       });
 
-      // POST to /resize
       const res = await fetch(`${SERVER_BASE_URL}/resize`, {
         method: "POST",
         body: formData,
       });
-
       if (!res.ok) {
         const text = await res.text();
         throw new Error(`Server error: ${res.status} - ${text}`);
       }
-
       const data = await res.json();
       if (!data.images) {
         throw new Error("No images returned from server.");
       }
 
-      // data.images -> array of { filename, resized_b64 }
-      const updated = images.map((img, idx) => {
-        const serverImg = data.images[idx];
-        if (serverImg && serverImg.resized_b64) {
-          const binary = atob(serverImg.resized_b64);
+      const updated = globalImages.map((img, idx) => {
+        const srv = data.images[idx];
+        if (srv?.resized_b64) {
+          const binary = atob(srv.resized_b64);
           const array = new Uint8Array(binary.length);
           for (let i = 0; i < binary.length; i++) {
             array[i] = binary.charCodeAt(i);
           }
           const blob = new Blob([array], { type: "image/jpeg" });
-          const resizedUrl = URL.createObjectURL(blob);
+          const newUrl = URL.createObjectURL(blob);
 
           return {
             ...img,
-            resized: true,
-            success: true,
-            resizedUrl,
-          };
-        } else {
-          return {
-            ...img,
-            resized: true,
-            success: false,
-            errorMsg: "No resized data returned.",
+            url: newUrl,
+            file: new File([blob], img.file.name, { type: "image/jpeg" }),
           };
         }
+        return img;
       });
 
-      setImages(updated);
-      setSuccessMsg(`Successfully resized ${images.length} image(s)!`);
-    } catch (error) {
-      console.error("Resize error:", error);
-      setErrorMsg(error.message || "Resize failed.");
+      setGlobalImages(updated);
+      setDidProcess(true);
+    } catch (err) {
+      console.error("Resize error:", err);
+      setErrorMsg(err.message || "Resize failed.");
     } finally {
       setIsResizing(false);
     }
   };
 
-  const handleDownloadOne = (img) => {
-    if (!img.resizedUrl) return;
+  const handleDownloadOne = (index) => {
+    const img = globalImages[index];
+    if (!img) return;
+    const origName = img.file.name.replace(/\.[^/.]+$/, "");
+    const ext = ".jpg";
+    const newName = `${origName}_resized${ext}`;
+
     const link = document.createElement("a");
-    link.href = img.resizedUrl;
-    link.download = `resized-${img.file.name}`;
+    link.href = img.url;
+    link.download = newName;
     link.click();
   };
 
-  const handleDownloadAll = () => {
-    images.forEach((img) => {
-      if (img.resized && img.success && img.resizedUrl) {
-        const link = document.createElement("a");
-        link.href = img.resizedUrl;
-        link.download = `resized-${img.file.name}`;
-        link.click();
-      }
-    });
+  const handleDownloadAll = async () => {
+    if (!didProcess || globalImages.length === 0) return;
+
+    const zip = new JSZip();
+    const folder = zip.folder("resized_images");
+
+    for (let i = 0; i < globalImages.length; i++) {
+      const img = globalImages[i];
+      const response = await fetch(img.url);
+      const blob = await response.blob();
+
+      const origName = img.file.name.replace(/\.[^/.]+$/, "");
+      const ext = ".jpg";
+      const newName = `${origName}_resized${ext}`;
+
+      folder.file(newName, blob);
+    }
+
+    const content = await zip.generateAsync({ type: "blob" });
+    saveAs(content, "resized_images.zip");
   };
 
-  const hasAnyResized = images.some((img) => img.resized && img.success);
-
   return (
-    <div className="relative">
-      <div className="mx-auto mt-10 mb-10 w-full max-w-4xl bg-white shadow-lg p-8 rounded-md">
-        <h1 className="text-4xl font-extrabold text-gray-800 text-center">Resize Images</h1>
-        <p className="mt-2 text-lg text-gray-600 text-center">
-          Adjust the width and height below (lock ratio optional), and upload up to 5 images!
-        </p>
+    <div className="mx-auto mt-10 mb-10 w-full max-w-4xl bg-white p-6 rounded-md shadow font-sans">
+      <h1 className="text-3xl font-bold text-center text-gray-800">Resize Images</h1>
+      <p className="mt-2 text-sm text-center text-gray-600">
+        Set the width and height (lock ratio if you like), then resize them.
+      </p>
 
-        {errorMsg && <div className="mt-4 text-sm text-red-600 text-center">{errorMsg}</div>}
-        {successMsg && <div className="mt-4 text-sm text-green-600 text-center">{successMsg}</div>}
+      {errorMsg && (
+        <div className="mt-4 text-center text-sm text-red-600">{errorMsg}</div>
+      )}
 
-        {/* Dimension inputs + Lock toggle */}
-        <div className="mt-6 flex flex-col items-center gap-4">
-          <div className="flex items-center gap-4">
-            <label className="block text-sm font-medium text-gray-700">
-              Width
-              <input
-                type="number"
-                value={width}
-                onChange={(e) => onChangeWidth(e.target.value)}
-                className="mt-1 block w-24 rounded border border-gray-300 px-2 py-1 text-center text-sm"
-              />
-            </label>
-            <label className="block text-sm font-medium text-gray-700">
-              Height
-              <input
-                type="number"
-                value={height}
-                onChange={(e) => onChangeHeight(e.target.value)}
-                className="mt-1 block w-24 rounded border border-gray-300 px-2 py-1 text-center text-sm"
-              />
-            </label>
-
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={locked}
-                onChange={(e) => setLocked(e.target.checked)}
-              />
-              Lock Ratio
-            </label>
-          </div>
+      <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+        <label className="flex flex-col text-sm text-gray-700">
+          <span className="font-medium mb-1 text-center">Width</span>
+          <input
+            type="number"
+            value={width}
+            onChange={(e) => onChangeWidth(e.target.value)}
+            className="block w-24 rounded-md border border-gray-300 px-3 py-1 text-center text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          />
+        </label>
+        <label className="flex flex-col text-sm text-gray-700">
+          <span className="font-medium mb-1 text-center">Height</span>
+          <input
+            type="number"
+            value={height}
+            onChange={(e) => onChangeHeight(e.target.value)}
+            className="block w-24 rounded-md border border-gray-300 px-3 py-1 text-center text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          />
+        </label>
+        <div className="flex flex-col items-center">
+          <span className="mb-1 text-sm font-medium text-gray-700">Lock Ratio</span>
+          <Switch
+            checked={locked}
+            onChange={handleToggleLock}
+            className={`${
+              locked ? "bg-blue-600" : "bg-gray-300"
+            } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
+          >
+            <span
+              className={`${
+                locked ? "translate-x-6" : "translate-x-1"
+              } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+            />
+          </Switch>
         </div>
-
-        {/* Uploader */}
-        <div className="mt-8">
-          <MultipleImageUploaderForResize images={images} onChange={handleImagesChange} />
-        </div>
-
-        {/* Action buttons */}
-        {images.length > 0 && (
-          <div className="mt-6 flex flex-col items-center gap-4">
-            <button
-              onClick={handleResizeAll}
-              disabled={isResizing}
-              className="rounded-md bg-indigo-600 px-6 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
-            >
-              {isResizing
-                ? "Resizing..."
-                : images.length === 1
-                ? "Resize"
-                : "Resize All"}
-            </button>
-
-            {hasAnyResized && (
-              <button
-                onClick={handleDownloadAll}
-                className="rounded-md bg-green-600 px-6 py-2 text-sm font-semibold text-white hover:bg-green-500"
-              >
-                Download All
-              </button>
-            )}
-
-            <button
-              onClick={handleClearAll}
-              className="rounded-md bg-gray-300 px-6 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-400"
-            >
-              Clear All
-            </button>
-          </div>
-        )}
-
-        {/* Thumbnails row with horizontal scroll */}
-        {images.length > 0 && (
-          <div className="mt-8 flex flex-nowrap gap-4 overflow-x-auto">
-            {images.map((img, idx) => (
-              <div
-                key={idx}
-                className="relative w-48 h-48 flex-shrink-0 border rounded-md flex flex-col items-center justify-center bg-gray-50 p-2"
-              >
-                {/* Remove icon */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newArr = images.filter((_, i) => i !== idx);
-                    setImages(newArr);
-                  }}
-                  className="absolute top-1 right-1 rounded-full bg-gray-200 p-1 text-gray-600 shadow hover:bg-gray-300"
-                >
-                  ✕
-                </button>
-
-                {/* Show resized preview if success, else original */}
-                <img
-                  src={img.resized && img.success ? img.resizedUrl : img.url}
-                  alt={`img-${idx}`}
-                  className="max-h-32 object-contain"
-                />
-
-                {/* Status text */}
-                {img.resized && img.success && (
-                  <div className="mt-2 text-green-600 font-semibold">✓ Resized</div>
-                )}
-                {img.resized && !img.success && (
-                  <div className="mt-2 text-red-600 text-sm">
-                    {img.errorMsg || "Error"}
-                  </div>
-                )}
-
-                {/* Download button if resized & success */}
-                {img.resized && img.success && (
-                  <button
-                    onClick={() => handleDownloadOne(img)}
-                    className="mt-2 rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-500"
-                  >
-                    Download
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
+
+      <div className="mt-6">
+        <GlobalUploader didProcess={didProcess} onDownloadOne={handleDownloadOne} />
+      </div>
+
+      {globalImages.length > 0 && (
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+          <button
+            onClick={handleResizeAll}
+            disabled={isResizing}
+            className="rounded-md bg-indigo-600 px-6 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+          >
+            {isResizing
+              ? "Resizing..."
+              : globalImages.length === 1
+              ? "Resize"
+              : "Resize All"}
+          </button>
+
+          {didProcess && (
+            <button
+              onClick={handleDownloadAll}
+              className="rounded-md bg-green-600 px-6 py-2 text-sm font-semibold text-white hover:bg-green-500"
+            >
+              Download All
+            </button>
+          )}
+
+          <button
+            onClick={clearAllImages}
+            className="rounded-md bg-gray-300 px-6 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-400"
+          >
+            Clear All
+          </button>
+        </div>
+      )}
     </div>
   );
 }

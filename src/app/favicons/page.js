@@ -1,40 +1,33 @@
 "use client";
+
 import React, { useState } from "react";
-import MultipleImageUploaderForFavicon from "@/components/ui/MultipleImageUploaderForFavicon";
+import { useImageContext } from "@/context/ImageProvider";
+import GlobalUploader from "@/components/ui/GlobalUploader";
 import { SERVER_BASE_URL } from "@/config";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 
 export default function FaviconsPage() {
-  const [images, setImages] = useState([]);
-  // images: array of {
-  //   file, url, success, faviconUrl, errorMsg, ...
-  // }
+  const { globalImages, clearAllImages } = useImageContext();
   const [isGenerating, setIsGenerating] = useState(false);
-
+  const [didProcess, setDidProcess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [successMsg, setSuccessMsg] = useState(null);
 
-  const handleImagesChange = (newImages) => {
-    setImages(newImages);
-    setErrorMsg(null);
-    setSuccessMsg(null);
-  };
-
-  const handleClearAll = () => {
-    setImages([]);
-    setErrorMsg(null);
-    setSuccessMsg(null);
-  };
+  // We'll store the generated data for each image in the same order as globalImages.
+  // Each entry is { fav16Url, fav32Url, icoUrl }, or null if generation failed.
+  const [faviconResults, setFaviconResults] = useState([]);
 
   const handleGenerateAll = async () => {
-    if (!images.length) return;
+    if (globalImages.length === 0) return;
 
     setIsGenerating(true);
     setErrorMsg(null);
-    setSuccessMsg(null);
+    setDidProcess(false);
+    setFaviconResults([]);
 
     try {
       const formData = new FormData();
-      images.forEach((img) => {
+      globalImages.forEach((img) => {
         formData.append("images", img.file);
       });
 
@@ -42,7 +35,6 @@ export default function FaviconsPage() {
         method: "POST",
         body: formData,
       });
-
       if (!res.ok) {
         const text = await res.text();
         throw new Error(`Server error: ${res.status} - ${text}`);
@@ -50,161 +42,158 @@ export default function FaviconsPage() {
 
       const data = await res.json();
       if (!data.images) {
-        throw new Error("No images returned from server.");
+        throw new Error("No data returned from server");
       }
 
-      // data.images -> array of { filename, favicon_b64 }
-      const updated = images.map((img, idx) => {
-        const serverImg = data.images[idx];
-        if (serverImg && serverImg.favicon_b64) {
-          const binary = atob(serverImg.favicon_b64);
-          const array = new Uint8Array(binary.length);
-          for (let i = 0; i < binary.length; i++) {
-            array[i] = binary.charCodeAt(i);
-          }
-          const blob = new Blob([array], { type: "image/x-icon" });
-          const faviconUrl = URL.createObjectURL(blob);
+      // data.images is an array of objects: { filename, fav16_b64, fav32_b64, ico_b64 }
+      const newResults = data.images.map((item) => {
+        // Convert base64 to URLs
+        const fav16Blob = b64ToBlob(item.fav16_b64, "image/png");
+        const fav16Url = URL.createObjectURL(fav16Blob);
 
-          return {
-            ...img,
-            success: true,
-            faviconUrl,
-          };
-        } else {
-          return {
-            ...img,
-            success: false,
-            errorMsg: "No data returned",
-          };
-        }
+        const fav32Blob = b64ToBlob(item.fav32_b64, "image/png");
+        const fav32Url = URL.createObjectURL(fav32Blob);
+
+        const icoBlob = b64ToBlob(item.ico_b64, "image/x-icon");
+        const icoUrl = URL.createObjectURL(icoBlob);
+
+        return {
+          filename: item.filename,
+          fav16Url,
+          fav32Url,
+          icoUrl,
+        };
       });
 
-      setImages(updated);
-      setSuccessMsg(`Generated ${images.length} favicon(s) successfully!`);
-    } catch (error) {
-      console.error("Favicon generation error:", error);
-      setErrorMsg(error.message || "Favicon generation failed");
+      setFaviconResults(newResults);
+      setDidProcess(true);
+    } catch (err) {
+      console.error("Favicon generation error:", err);
+      setErrorMsg(err.message || "Favicon generation failed");
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleDownloadOne = (img) => {
-    if (!img.faviconUrl) return;
-    const link = document.createElement("a");
-    link.href = img.faviconUrl;
-    link.download = "favicon.ico";
-    link.click();
-  };
+  // Download "one" image's favicon set as a mini-zip with 3 files
+  const handleDownloadOne = (index) => {
+    const res = faviconResults[index];
+    if (!res) return;
 
-  const handleDownloadAll = () => {
-    images.forEach((img) => {
-      if (img.success && img.faviconUrl) {
-        const link = document.createElement("a");
-        link.href = img.faviconUrl;
-        link.download = "favicon.ico";
-        link.click();
-      }
+    const origName = res.filename.replace(/\.[^/.]+$/, ""); // remove extension
+    const zip = new JSZip();
+    const folder = zip.folder(`${origName}_favicons`);
+
+    // fetch blobs from each URL
+    Promise.all([
+      fetch(res.fav16Url).then((r) => r.blob()),
+      fetch(res.fav32Url).then((r) => r.blob()),
+      fetch(res.icoUrl).then((r) => r.blob()),
+    ]).then(([blob16, blob32, icoBlob]) => {
+      folder.file("favicon-16x16.png", blob16);
+      folder.file("favicon-32x32.png", blob32);
+      folder.file("favicon.ico", icoBlob);
+
+      zip.generateAsync({ type: "blob" }).then((content) => {
+        saveAs(content, `${origName}_favicons.zip`);
+      });
     });
   };
 
-  const hasAnyGenerated = images.some((img) => img.success);
+  // Download all images' favicons in a single zip, with subfolders
+  const handleDownloadAll = () => {
+    if (!didProcess || faviconResults.length === 0) return;
+
+    const zip = new JSZip();
+    const rootFolder = zip.folder("all_favicons");
+
+    const promises = faviconResults.map((res, idx) => {
+      const origName = res.filename.replace(/\.[^/.]+$/, "");
+      const subFolder = rootFolder.folder(`${origName}_favicons`);
+
+      return Promise.all([
+        fetch(res.fav16Url).then((r) => r.blob()),
+        fetch(res.fav32Url).then((r) => r.blob()),
+        fetch(res.icoUrl).then((r) => r.blob()),
+      ]).then(([blob16, blob32, icoBlob]) => {
+        subFolder.file("favicon-16x16.png", blob16);
+        subFolder.file("favicon-32x32.png", blob32);
+        subFolder.file("favicon.ico", icoBlob);
+      });
+    });
+
+    Promise.all(promises).then(() => {
+      zip.generateAsync({ type: "blob" }).then((content) => {
+        saveAs(content, "all_favicons.zip");
+      });
+    });
+  };
+
+  const handleClearAll = () => {
+    clearAllImages();
+    setFaviconResults([]);
+    setDidProcess(false);
+    setErrorMsg(null);
+  };
+
+  const b64ToBlob = (b64Data, contentType) => {
+    const binary = atob(b64Data);
+    const array = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      array[i] = binary.charCodeAt(i);
+    }
+    return new Blob([array], { type: contentType });
+  };
 
   return (
-    <div className="relative">
-      <div className="mx-auto mt-10 mb-10 w-full max-w-4xl bg-white shadow-lg p-8 rounded-md">
-        <h1 className="text-4xl font-extrabold text-gray-800 text-center">Favicons</h1>
-        <p className="mt-2 text-lg text-gray-600 text-center">
-          Upload up to 5 images to generate .ico favicons (32×32).
-        </p>
+    <div className="mx-auto mt-10 mb-10 w-full max-w-4xl bg-white p-6 rounded-md shadow">
+      <h1 className="text-3xl font-bold text-center text-gray-800">Favicons</h1>
+      <p className="mt-2 text-sm text-center text-gray-600">
+        Upload up to 5 images, then generate your 16×16, 32×32, and .ico favicons.
+      </p>
 
-        {errorMsg && <div className="mt-4 text-sm text-red-600 text-center">{errorMsg}</div>}
-        {successMsg && <div className="mt-4 text-sm text-green-600 text-center">{successMsg}</div>}
+      {errorMsg && (
+        <div className="mt-4 text-center text-sm text-red-600">{errorMsg}</div>
+      )}
 
-        {/* Uploader */}
-        <div className="mt-8">
-          <MultipleImageUploaderForFavicon images={images} onChange={handleImagesChange} />
-        </div>
-
-        {/* Action buttons */}
-        {images.length > 0 && (
-          <div className="mt-6 flex flex-col items-center gap-4">
-            <button
-              onClick={handleGenerateAll}
-              disabled={isGenerating}
-              className="rounded-md bg-indigo-600 px-6 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
-            >
-              {isGenerating
-                ? "Generating..."
-                : images.length === 1
-                ? "Generate Favicon"
-                : "Generate All Favicons"}
-            </button>
-
-            {hasAnyGenerated && (
-              <button
-                onClick={handleDownloadAll}
-                className="rounded-md bg-green-600 px-6 py-2 text-sm font-semibold text-white hover:bg-green-500"
-              >
-                Download All
-              </button>
-            )}
-
-            <button
-              onClick={handleClearAll}
-              className="rounded-md bg-gray-300 px-6 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-400"
-            >
-              Clear All
-            </button>
-          </div>
-        )}
-
-        {/* Thumbnails row */}
-        {images.length > 0 && (
-          <div className="mt-8 flex flex-nowrap gap-4 overflow-x-auto">
-            {images.map((img, idx) => (
-              <div
-                key={idx}
-                className="relative w-48 h-48 flex-shrink-0 border rounded-md flex flex-col items-center justify-center bg-gray-50 p-2"
-              >
-                {/* Remove icon */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newArr = images.filter((_, i) => i !== idx);
-                    setImages(newArr);
-                  }}
-                  className="absolute top-1 right-1 rounded-full bg-gray-200 p-1 text-gray-600 shadow hover:bg-gray-300"
-                >
-                  ✕
-                </button>
-
-                <img
-                  src={img.success && img.faviconUrl ? img.faviconUrl : img.url}
-                  alt={`img-${idx}`}
-                  className="max-h-32 object-contain"
-                />
-
-                {img.success && (
-                  <div className="mt-2 text-green-600 font-semibold">✓ Favicon</div>
-                )}
-                {!img.success && img.errorMsg && (
-                  <div className="mt-2 text-red-600 text-sm">{img.errorMsg}</div>
-                )}
-
-                {img.success && (
-                  <button
-                    onClick={() => handleDownloadOne(img)}
-                    className="mt-2 rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-500"
-                  >
-                    Download
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+      <div className="mt-6">
+        <GlobalUploader
+          didProcess={didProcess}
+          onDownloadOne={handleDownloadOne}
+        />
       </div>
+
+      {globalImages.length > 0 && (
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+          <button
+            onClick={handleGenerateAll}
+            disabled={isGenerating}
+            className="rounded-md bg-indigo-600 px-6 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+          >
+            {isGenerating
+              ? "Generating..."
+              : globalImages.length === 1
+              ? "Generate Favicon"
+              : "Generate All Favicons"}
+          </button>
+
+          {didProcess && faviconResults.length > 0 && (
+            <button
+              onClick={handleDownloadAll}
+              className="rounded-md bg-green-600 px-6 py-2 text-sm font-semibold text-white hover:bg-green-500"
+            >
+              Download All
+            </button>
+          )}
+
+          <button
+            onClick={handleClearAll}
+            className="rounded-md bg-gray-300 px-6 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-400"
+          >
+            Clear All
+          </button>
+        </div>
+      )}
     </div>
   );
 }
