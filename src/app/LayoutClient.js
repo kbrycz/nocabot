@@ -17,7 +17,6 @@ import {
 } from "@heroicons/react/24/outline";
 
 import { ImageProvider } from "@/context/ImageProvider";
-// Import your AuroraText
 import { AuroraText } from "@/components/ui/AuroraText";
 
 // Nav arrays
@@ -42,16 +41,12 @@ const specialtyNav = [
   { name: "App Icon", href: "/app-icon", icon: <DevicePhoneMobileIcon className="h-6 w-6" /> },
 ];
 
-// Sidebar content
+// Here is the sidebar content
 function SidebarContent({ onLinkClick }) {
   return (
     <nav className="flex flex-col h-full items-center">
-      {/* AuroraText instead of an image */}
-      <Link
-        href="/"
-        onClick={() => onLinkClick?.()}
-        className="mt-4 block text-center"
-      >
+      {/* AuroraText as the top brand */}
+      <Link href="/" onClick={() => onLinkClick?.()} className="mt-4 block text-center">
         <AuroraText className="text-2xl font-bold tracking-tight text-gray-800">
           Nocabot
         </AuroraText>
@@ -62,9 +57,11 @@ function SidebarContent({ onLinkClick }) {
           <ul role="list" className="space-y-1">
             {featuresNav.map((item) => (
               <li key={item.name}>
+                {/* Changed from hover:bg-gray-50 hover:text-indigo-600
+                    to hover:bg-blue-50 hover:text-blue-600 */}
                 <Link
                   href={item.href}
-                  className="text-gray-700 hover:bg-gray-50 hover:text-indigo-600 group flex gap-x-3 rounded-md p-2 text-sm font-semibold"
+                  className="text-gray-700 hover:bg-blue-50 hover:text-blue-600 group flex gap-x-3 rounded-md p-2 text-sm font-semibold"
                   onClick={() => onLinkClick?.()}
                 >
                   {item.icon}
@@ -86,7 +83,7 @@ function SidebarContent({ onLinkClick }) {
               <li key={item.name}>
                 <Link
                   href={item.href}
-                  className="text-gray-700 hover:bg-gray-50 hover:text-indigo-600 group flex gap-x-3 rounded-md p-2 text-sm font-semibold"
+                  className="text-gray-700 hover:bg-blue-50 hover:text-blue-600 group flex gap-x-3 rounded-md p-2 text-sm font-semibold"
                   onClick={() => onLinkClick?.()}
                 >
                   {item.icon}
@@ -108,10 +105,10 @@ export default function LayoutClient({ children }) {
     <ImageProvider>
       {/* 
         Full-screen container, pinned sidebar on desktop,
-        no horizontal scroll: "w-screen overflow-hidden"
+        no horizontal scroll: "overflow-hidden", "w-screen".
       */}
       <div className="flex h-screen w-screen overflow-hidden font-sans bg-white">
-        {/* DESKTOP SIDEBAR (pinned left, full height) */}
+        {/* DESKTOP SIDEBAR */}
         <aside className="hidden md:flex md:flex-col w-64 h-full border-r border-gray-200 bg-white px-4 py-2">
           <SidebarContent />
         </aside>
@@ -126,8 +123,8 @@ export default function LayoutClient({ children }) {
             >
               <Bars3Icon className="h-6 w-6" />
             </button>
-            {/* AuroraText in the mobile top bar, smaller */}
             <Link href="/" className="block">
+              {/* AuroraText in mobile top bar as well */}
               <AuroraText className="text-xl font-bold tracking-tight text-gray-800">
                 Nocabot
               </AuroraText>
