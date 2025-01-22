@@ -1,9 +1,7 @@
 "use client";
 
-import "./globals.css";
-import { DotPattern } from "@/components/ui/DotPattern";
-import Link from "next/link";
 import React, { useState } from "react";
+import Link from "next/link";
 import {
   ArrowsRightLeftIcon,
   PhotoIcon,
@@ -16,10 +14,12 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 
+// If you use a global context:
 import { ImageProvider } from "@/context/ImageProvider";
 import { AuroraText } from "@/components/ui/AuroraText";
+import { DotPattern } from "@/components/ui/DotPattern";
 
-// Nav arrays
+// The nav arrays (example)
 const featuresNav = [
   { name: "Home", href: "/", icon: <HomeIcon className="h-6 w-6" /> },
   {
@@ -41,11 +41,10 @@ const specialtyNav = [
   { name: "App Icon", href: "/app-icon", icon: <DevicePhoneMobileIcon className="h-6 w-6" /> },
 ];
 
-// Here is the sidebar content
+// The sidebar content
 function SidebarContent({ onLinkClick }) {
   return (
     <nav className="flex flex-col h-full items-center">
-      {/* AuroraText as the top brand */}
       <Link href="/" onClick={() => onLinkClick?.()} className="mt-4 block text-center">
         <AuroraText className="text-2xl font-bold tracking-tight text-gray-800">
           Nocabot
@@ -57,8 +56,6 @@ function SidebarContent({ onLinkClick }) {
           <ul role="list" className="space-y-1">
             {featuresNav.map((item) => (
               <li key={item.name}>
-                {/* Changed from hover:bg-gray-50 hover:text-indigo-600
-                    to hover:bg-blue-50 hover:text-blue-600 */}
                 <Link
                   href={item.href}
                   className="text-gray-700 hover:bg-blue-50 hover:text-blue-600 group flex gap-x-3 rounded-md p-2 text-sm font-semibold"
@@ -102,18 +99,15 @@ export default function LayoutClient({ children }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
+    // If you use <ImageProvider> here, that’s fine; or do it in the root layout if you prefer
     <ImageProvider>
-      {/* 
-        Full-screen container, pinned sidebar on desktop,
-        no horizontal scroll: "overflow-hidden", "w-screen".
-      */}
-      <div className="flex h-screen w-screen overflow-hidden font-sans bg-white">
-        {/* DESKTOP SIDEBAR */}
+      <div className="flex h-screen w-screen overflow-hidden bg-white">
+        {/* Desktop sidebar */}
         <aside className="hidden md:flex md:flex-col w-64 h-full border-r border-gray-200 bg-white px-4 py-2">
           <SidebarContent />
         </aside>
 
-        {/* MAIN AREA */}
+        {/* Main content area */}
         <div className="relative flex-1 flex flex-col overflow-hidden">
           {/* Mobile top bar */}
           <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-gray-200">
@@ -124,24 +118,21 @@ export default function LayoutClient({ children }) {
               <Bars3Icon className="h-6 w-6" />
             </button>
             <Link href="/" className="block">
-              {/* AuroraText in mobile top bar as well */}
               <AuroraText className="text-xl font-bold tracking-tight text-gray-800">
                 Nocabot
               </AuroraText>
             </Link>
           </div>
 
-          {/* Content container that can scroll vertically */}
-          <div className="relative flex-1 overflow-auto p-8">
-            <DotPattern />
-            <div className="relative z-10">{children}</div>
+          {/* The children from RootLayout get rendered below */}
+          <div className="relative flex-1 overflow-auto">
+            {children}
           </div>
         </div>
 
         {/* MOBILE OFF-CANVAS SIDEBAR */}
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 flex">
-            {/* Overlay */}
             <div
               className="absolute inset-0 bg-black/50"
               onClick={() => setMobileMenuOpen(false)}

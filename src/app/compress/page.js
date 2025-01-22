@@ -10,7 +10,6 @@ import { saveAs } from "file-saver";
 export default function CompressPage() {
   const { globalImages, setGlobalImages, clearAllImages } = useImageContext();
 
-  // sliderValue from 1..10, step=0.1 for smoothness
   const [sliderValue, setSliderValue] = useState(5);
   const [isCompressing, setIsCompressing] = useState(false);
   const [didProcess, setDidProcess] = useState(false);
@@ -45,7 +44,6 @@ export default function CompressPage() {
         throw new Error("No images returned from server");
       }
 
-      // Build new array with updated "url"
       const updated = globalImages.map((img, idx) => {
         const srv = data.images[idx];
         if (srv?.compressed_b64) {
@@ -111,8 +109,8 @@ export default function CompressPage() {
   };
 
   return (
-    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
-    <h1 className="text-3xl font-bold text-center text-gray-800">Compress Images</h1>
+    <div className="mx-auto mt-10 mb-10 w-full sm:w-[98%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
+      <h1 className="text-3xl font-bold text-center text-gray-800">Compress Images</h1>
       <p className="mt-2 text-sm text-center text-gray-600">
         Upload up to 5 images, adjust the slider, then compress.
       </p>
@@ -121,6 +119,7 @@ export default function CompressPage() {
         <div className="mt-4 text-center text-sm text-red-600">{errorMsg}</div>
       )}
 
+      {/* The slider UI */}
       <div className="mt-6 flex flex-col items-center gap-2">
         <div className="flex w-full max-w-sm items-center justify-between px-2 text-sm font-medium text-gray-700">
           <span>Smaller file size</span>
@@ -153,7 +152,7 @@ export default function CompressPage() {
             border-radius: 9999px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
             cursor: pointer;
-            margin-top: -6px; /* center the thumb on track */
+            margin-top: -6px;
           }
           .my-slider::-moz-range-thumb {
             height: 20px;
