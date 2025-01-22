@@ -20,7 +20,6 @@ export default function ResizePage() {
   const [didProcess, setDidProcess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  // Width/height changes
   const onChangeWidth = (val) => {
     const newW = parseInt(val || 0, 10);
     setWidth(newW);
@@ -36,7 +35,6 @@ export default function ResizePage() {
     }
   };
 
-  // Toggle lock
   const handleToggleLock = (checked) => {
     setLocked(checked);
     if (checked && width > 0) {
@@ -44,7 +42,6 @@ export default function ResizePage() {
     }
   };
 
-  // Resize all images
   const handleResizeAll = async () => {
     if (globalImages.length === 0) return;
     if (width < 1 || height < 1) {
@@ -59,6 +56,7 @@ export default function ResizePage() {
       const formData = new FormData();
       formData.append("width", width.toString());
       formData.append("height", height.toString());
+
       globalImages.forEach((img) => {
         formData.append("images", img.file);
       });
@@ -76,7 +74,6 @@ export default function ResizePage() {
         throw new Error("No images returned from server.");
       }
 
-      // update each image with the resized base64
       const updated = globalImages.map((img, idx) => {
         const srv = data.images[idx];
         if (srv?.resized_b64) {
@@ -101,19 +98,22 @@ export default function ResizePage() {
       setDidProcess(true);
     } catch (err) {
       console.error("Resize error:", err);
-      setErrorMsg(err.message || "Resize failed.");
+
+      let msg = err?.message || "Resize failed.";
+      if (msg.includes("Failed to fetch") || msg.includes("Load failed")) {
+        msg = "Could not connect to server. Please try again later.";
+      }
+      setErrorMsg(msg);
     } finally {
       setIsResizing(false);
     }
   };
 
-  // Download single
   const handleDownloadOne = (index) => {
     const img = globalImages[index];
     if (!img) return;
     const origName = img.file.name.replace(/\.[^/.]+$/, "");
-    const ext = ".jpg";
-    const newName = `${origName}_resized${ext}`;
+    const newName = `${origName}_resized.jpg`;
 
     const link = document.createElement("a");
     link.href = img.url;
@@ -121,7 +121,6 @@ export default function ResizePage() {
     link.click();
   };
 
-  // Download all
   const handleDownloadAll = async () => {
     if (!didProcess || globalImages.length === 0) return;
 
@@ -134,12 +133,16 @@ export default function ResizePage() {
       const blob = await response.blob();
 
       const origName = img.file.name.replace(/\.[^/.]+$/, "");
-      const newName = `${origName}_resized.jpg`;
-      folder.file(newName, blob);
+      folder.file(`${origName}_resized.jpg`, blob);
     }
 
     const content = await zip.generateAsync({ type: "blob" });
     saveAs(content, "resized_images.zip");
+  };
+
+  const handleClearAll = () => {
+    setErrorMsg(null);
+    clearAllImages();
   };
 
   return (
@@ -153,7 +156,6 @@ export default function ResizePage() {
         <div className="mt-4 text-center text-sm text-red-600">{errorMsg}</div>
       )}
 
-      {/* Dimension controls */}
       <div className="mt-6 flex flex-col items-center gap-6 sm:flex-row sm:justify-center">
         {/* Width */}
         <label className="flex flex-col text-sm text-gray-700">
@@ -197,7 +199,10 @@ export default function ResizePage() {
       </div>
 
       <div className="mt-6">
-        <GlobalUploader didProcess={didProcess} onDownloadOne={handleDownloadOne} />
+        <GlobalUploader
+          didProcess={didProcess}
+          onDownloadOne={handleDownloadOne}
+        />
       </div>
 
       {globalImages.length > 0 && (
@@ -224,7 +229,7 @@ export default function ResizePage() {
           )}
 
           <button
-            onClick={clearAllImages}
+            onClick={handleClearAll}
             className="rounded-md bg-gray-300 px-6 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-400"
           >
             Clear All

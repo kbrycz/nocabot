@@ -69,7 +69,11 @@ export default function FaviconsPage() {
       setDidProcess(true);
     } catch (err) {
       console.error("Favicon generation error:", err);
-      setErrorMsg(err.message || "Favicon generation failed");
+      let msg = err?.message || "Favicon generation failed.";
+      if (msg.includes("Failed to fetch") || msg.includes("Load failed")) {
+        msg = "Could not connect to server. Please try again later.";
+      }
+      setErrorMsg(msg);
     } finally {
       setIsGenerating(false);
     }

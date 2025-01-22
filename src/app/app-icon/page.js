@@ -12,7 +12,7 @@ import GlobalUploader from "@/components/ui/GlobalUploader";
  * which resizes them to 1024x1024 and compresses at level=5 (quality=50).
  */
 export default function AppIconPage() {
-  const { globalImages, setGlobalImages, clearAllImages } = useImageContext();
+  const { globalImages, setGlobalImages, clearAllImages} = useImageContext();
   const [isGenerating, setIsGenerating] = useState(false);
   const [didProcess, setDidProcess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -74,8 +74,11 @@ export default function AppIconPage() {
       setGlobalImages(updated);
       setDidProcess(true);
     } catch (err) {
-      console.error("App Icon error:", err);
-      setErrorMsg(err.message || "App Icon generation failed");
+        let msg = err?.message || "App icon conversion failed.";
+        // If fetch fails or server not reachable:
+        if (msg.includes("Failed to fetch") || msg.includes("Load failed")) {
+          msg = "Could not connect to server. Please try again later.";
+        }
     } finally {
       setIsGenerating(false);
     }
@@ -106,6 +109,11 @@ export default function AppIconPage() {
 
     const content = await zip.generateAsync({ type: "blob" });
     saveAs(content, "app_icons.zip");
+  };
+
+  const handleClearAll = () => {
+    setErrorMsg(null);
+    clearAllImages();
   };
 
   return (
@@ -147,7 +155,7 @@ export default function AppIconPage() {
           )}
 
           <button
-            onClick={clearAllImages}
+            onClick={handleClearAll}
             className="rounded-md bg-gray-300 px-6 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-400"
           >
             Clear All

@@ -68,7 +68,12 @@ export default function RemoveBGPage() {
       setDidProcess(true);
     } catch (err) {
       console.error("Remove BG error:", err);
-      setErrorMsg(err.message || "Remove BG failed");
+      let msg = err?.message || "Background removal failed.";
+
+      if (msg.includes("Failed to fetch") || msg.includes("Load failed")) {
+        msg = "Could not connect to server. Please try again later.";
+      }
+      setErrorMsg(msg);
     } finally {
       setIsRemoving(false);
     }
@@ -101,11 +106,16 @@ export default function RemoveBGPage() {
     saveAs(content, "no_bg_images.zip");
   };
 
+  const handleClearAll = () => {
+    setErrorMsg(null);
+    clearAllImages();
+  };
+
   return (
     <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
       <h1 className="text-3xl font-bold text-center text-gray-800">Remove Background</h1>
       <p className="mt-2 text-sm text-center text-gray-600">
-        Automatically remove the background from up to 5 images using rembg.
+        Automatically remove the background from up to 5 images. (Coming Soon).
       </p>
 
       {errorMsg && (
@@ -140,7 +150,7 @@ export default function RemoveBGPage() {
           )}
 
           <button
-            onClick={clearAllImages}
+            onClick={handleClearAll}
             className="rounded-md bg-gray-300 px-6 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-400"
           >
             Clear All

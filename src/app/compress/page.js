@@ -44,6 +44,7 @@ export default function CompressPage() {
         throw new Error("No images returned from server");
       }
 
+      // Build new array with updated images
       const updated = globalImages.map((img, idx) => {
         const srv = data.images[idx];
         if (srv?.compressed_b64) {
@@ -68,7 +69,13 @@ export default function CompressPage() {
       setDidProcess(true);
     } catch (err) {
       console.error("Compression error:", err);
-      setErrorMsg(err.message || "Compression failed");
+
+      let msg = err?.message || "Compression failed.";
+      // If fetch fails or server not reachable:
+      if (msg.includes("Failed to fetch") || msg.includes("Load failed")) {
+        msg = "Could not connect to server. Please try again later.";
+      }
+      setErrorMsg(msg);
     } finally {
       setIsCompressing(false);
     }
@@ -78,8 +85,7 @@ export default function CompressPage() {
     const img = globalImages[index];
     if (!img) return;
     const origName = img.file.name.replace(/\.[^/.]+$/, "");
-    const ext = ".jpg";
-    const newName = `${origName}_compressed${ext}`;
+    const newName = `${origName}_compressed.jpg`;
 
     const link = document.createElement("a");
     link.href = img.url;
@@ -89,6 +95,7 @@ export default function CompressPage() {
 
   const handleDownloadAll = async () => {
     if (!didProcess || globalImages.length === 0) return;
+
     const zip = new JSZip();
     const folder = zip.folder("compressed_images");
 
@@ -98,25 +105,30 @@ export default function CompressPage() {
       const blob = await response.blob();
 
       const origName = img.file.name.replace(/\.[^/.]+$/, "");
-      const ext = ".jpg";
-      const newName = `${origName}_compressed${ext}`;
-
-      folder.file(newName, blob);
+      folder.file(`${origName}_compressed.jpg`, blob);
     }
 
     const content = await zip.generateAsync({ type: "blob" });
     saveAs(content, "compressed_images.zip");
   };
 
+  // Notice we also clear the error when user clicks "Clear All."
+  const handleClearAll = () => {
+    setErrorMsg(null);
+    clearAllImages();
+  };
+
   return (
-    <div className="mx-auto mt-10 mb-10 w-full sm:w-[98%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
+    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
       <h1 className="text-3xl font-bold text-center text-gray-800">Compress Images</h1>
       <p className="mt-2 text-sm text-center text-gray-600">
         Upload up to 5 images, adjust the slider, then compress.
       </p>
 
       {errorMsg && (
-        <div className="mt-4 text-center text-sm text-red-600">{errorMsg}</div>
+        <div className="mt-4 text-center text-sm text-red-600">
+          {errorMsg}
+        </div>
       )}
 
       {/* The slider UI */}
@@ -167,7 +179,10 @@ export default function CompressPage() {
       </div>
 
       <div className="mt-6">
-        <GlobalUploader didProcess={didProcess} onDownloadOne={handleDownloadOne} />
+        <GlobalUploader
+          didProcess={didProcess}
+          onDownloadOne={handleDownloadOne}
+        />
       </div>
 
       {globalImages.length > 0 && (
@@ -194,7 +209,7 @@ export default function CompressPage() {
           )}
 
           <button
-            onClick={clearAllImages}
+            onClick={handleClearAll}
             className="rounded-md bg-gray-300 px-6 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-400"
           >
             Clear All
