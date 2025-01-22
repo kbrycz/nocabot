@@ -2,33 +2,34 @@
 
 import React, { useState } from "react";
 import { useImageContext } from "@/context/ImageProvider";
-import GlobalUploader from "@/components/ui/GlobalUploader";
 import { SERVER_BASE_URL } from "@/config";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import GlobalUploader from "@/components/ui/GlobalUploader";
 
 export default function CompressPage() {
   const { globalImages, setGlobalImages, clearAllImages } = useImageContext();
 
   const [sliderValue, setSliderValue] = useState(5);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [isDisabled, setIsDisabled] = useState(false); // cooldown
   const [didProcess, setDidProcess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
   const handleCompressAll = async () => {
     if (globalImages.length === 0) return;
-    setIsCompressing(true);
     setErrorMsg(null);
     setDidProcess(false);
+    setIsCompressing(true);
+
+    // Start a 3-second cooldown
+    setIsDisabled(true);
+    setTimeout(() => setIsDisabled(false), 3000);
 
     try {
-      const compressionLevel = Math.round(sliderValue);
       const formData = new FormData();
-      formData.append("compression_level", compressionLevel.toString());
-
-      globalImages.forEach((img) => {
-        formData.append("images", img.file);
-      });
+      formData.append("compression_level", Math.round(sliderValue).toString());
+      globalImages.forEach((img) => formData.append("images", img.file));
 
       const res = await fetch(`${SERVER_BASE_URL}/compress`, {
         method: "POST",
@@ -38,13 +39,11 @@ export default function CompressPage() {
         const text = await res.text();
         throw new Error(`Server error: ${res.status} - ${text}`);
       }
-
       const data = await res.json();
       if (!data.images) {
         throw new Error("No images returned from server");
       }
 
-      // Build new array with updated images
       const updated = globalImages.map((img, idx) => {
         const srv = data.images[idx];
         if (srv?.compressed_b64) {
@@ -68,10 +67,7 @@ export default function CompressPage() {
       setGlobalImages(updated);
       setDidProcess(true);
     } catch (err) {
-      console.error("Compression error:", err);
-
       let msg = err?.message || "Compression failed.";
-      // If fetch fails or server not reachable:
       if (msg.includes("Failed to fetch") || msg.includes("Load failed")) {
         msg = "Could not connect to server. Please try again later.";
       }
@@ -103,7 +99,6 @@ export default function CompressPage() {
       const img = globalImages[i];
       const response = await fetch(img.url);
       const blob = await response.blob();
-
       const origName = img.file.name.replace(/\.[^/.]+$/, "");
       folder.file(`${origName}_compressed.jpg`, blob);
     }
@@ -112,7 +107,6 @@ export default function CompressPage() {
     saveAs(content, "compressed_images.zip");
   };
 
-  // Notice we also clear the error when user clicks "Clear All."
   const handleClearAll = () => {
     setErrorMsg(null);
     clearAllImages();
@@ -126,9 +120,7 @@ export default function CompressPage() {
       </p>
 
       {errorMsg && (
-        <div className="mt-4 text-center text-sm text-red-600">
-          {errorMsg}
-        </div>
+        <div className="mt-4 text-center text-sm text-red-600">{errorMsg}</div>
       )}
 
       {/* The slider UI */}
@@ -189,8 +181,12 @@ export default function CompressPage() {
         <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
           <button
             onClick={handleCompressAll}
-            disabled={isCompressing}
-            className="rounded-md bg-indigo-600 px-6 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+            disabled={isDisabled}
+            className={`rounded-md px-6 py-2 text-sm font-semibold text-white ${
+              isDisabled
+                ? "bg-indigo-300 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-500"
+            }`}
           >
             {isCompressing
               ? "Compressing..."

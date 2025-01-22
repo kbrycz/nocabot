@@ -3,109 +3,35 @@
 import React, { useState } from "react";
 import { useImageContext } from "@/context/ImageProvider";
 import GlobalUploader from "@/components/ui/GlobalUploader";
-import { SERVER_BASE_URL } from "@/config";
-import JSZip from "jszip";
-import { saveAs } from "file-saver";
 
+/**
+ * This version does NOT call the server. When "Remove BG" is clicked,
+ * it just shows an alert "Coming soon!" and disables the button for 3s.
+ */
 export default function RemoveBGPage() {
-  const { globalImages, setGlobalImages, clearAllImages } = useImageContext();
-  const [isRemoving, setIsRemoving] = useState(false);
-  const [didProcess, setDidProcess] = useState(false);
+  const { globalImages, clearAllImages } = useImageContext();
+
   const [errorMsg, setErrorMsg] = useState(null);
+  const [isRemoving, setIsRemoving] = useState(false); // spinner state
+  const [isDisabled, setIsDisabled] = useState(false); // 3-sec cooldown
 
-  const handleRemoveBgAll = async () => {
+  const handleRemoveBgAll = () => {
     if (globalImages.length === 0) return;
-
-    setIsRemoving(true);
     setErrorMsg(null);
-    setDidProcess(false);
+    setIsRemoving(true);
+    setIsDisabled(true);
 
-    try {
-      const formData = new FormData();
-      globalImages.forEach((img) => formData.append("images", img.file));
+    // Show "coming soon" alert
+    alert("This feature is coming soon! We hope to have it available in a future update.");
 
-      const res = await fetch(`${SERVER_BASE_URL}/remove-bg`, {
-        method: "POST",
-        body: formData,
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Server error: ${res.status} - ${text}`);
-      }
-
-      const data = await res.json();
-      if (!data.images) {
-        throw new Error("No images returned from server.");
-      }
-
-      const updated = globalImages.map((img, idx) => {
-        const srv = data.images[idx];
-        if (srv?.removed_b64) {
-          const binary = atob(srv.removed_b64);
-          const array = new Uint8Array(binary.length);
-          for (let i = 0; i < binary.length; i++) {
-            array[i] = binary.charCodeAt(i);
-          }
-          // PNG with alpha channel
-          const blob = new Blob([array], { type: "image/png" });
-          const newUrl = URL.createObjectURL(blob);
-
-          const origName = img.file.name.replace(/\.[^/.]+$/, "");
-          const newFile = new File([blob], `${origName}_no-bg.png`, {
-            type: "image/png",
-          });
-
-          return {
-            ...img,
-            url: newUrl,
-            file: newFile,
-          };
-        }
-        return img;
-      });
-
-      setGlobalImages(updated);
-      setDidProcess(true);
-    } catch (err) {
-      console.error("Remove BG error:", err);
-      let msg = err?.message || "Background removal failed.";
-
-      if (msg.includes("Failed to fetch") || msg.includes("Load failed")) {
-        msg = "Could not connect to server. Please try again later.";
-      }
-      setErrorMsg(msg);
-    } finally {
+    // After 3s, re-enable the button
+    setTimeout(() => {
       setIsRemoving(false);
-    }
+      setIsDisabled(false);
+    }, 3000);
   };
 
-  const handleDownloadOne = (index) => {
-    const img = globalImages[index];
-    if (!img) return;
-    const link = document.createElement("a");
-    link.href = img.url;
-    link.download = img.file.name; // file name includes _no-bg
-    link.click();
-  };
-
-  const handleDownloadAll = async () => {
-    if (!didProcess || globalImages.length === 0) return;
-
-    const zip = new JSZip();
-    const folder = zip.folder("no_bg_images");
-
-    for (let i = 0; i < globalImages.length; i++) {
-      const img = globalImages[i];
-      const response = await fetch(img.url);
-      const blob = await response.blob();
-
-      folder.file(img.file.name, blob);
-    }
-
-    const content = await zip.generateAsync({ type: "blob" });
-    saveAs(content, "no_bg_images.zip");
-  };
-
+  // Clear all images (and any error message)
   const handleClearAll = () => {
     setErrorMsg(null);
     clearAllImages();
@@ -115,23 +41,29 @@ export default function RemoveBGPage() {
     <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
       <h1 className="text-3xl font-bold text-center text-gray-800">Remove Background</h1>
       <p className="mt-2 text-sm text-center text-gray-600">
-        Automatically remove the background from up to 5 images. (Coming Soon).
+        Automatically remove the background from up to 5 images. (Coming Soon!)
       </p>
 
       {errorMsg && (
         <div className="mt-4 text-center text-sm text-red-600">{errorMsg}</div>
       )}
 
+      {/* GlobalUploader just to show images. We won't do anything with them. */}
       <div className="mt-6">
-        <GlobalUploader didProcess={didProcess} onDownloadOne={handleDownloadOne} />
+        <GlobalUploader
+          didProcess={false} // We never "process" for real
+          onDownloadOne={() => { /* no-op */ }}
+        />
       </div>
 
       {globalImages.length > 0 && (
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <button
             onClick={handleRemoveBgAll}
-            disabled={isRemoving}
-            className="rounded-md bg-indigo-600 px-6 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+            disabled={isDisabled}
+            className={`rounded-md px-6 py-2 text-sm font-semibold text-white ${
+              isDisabled ? "bg-indigo-300 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-500"
+            }`}
           >
             {isRemoving
               ? "Removing..."
@@ -140,15 +72,7 @@ export default function RemoveBGPage() {
               : "Remove Backgrounds"}
           </button>
 
-          {didProcess && (
-            <button
-              onClick={handleDownloadAll}
-              className="rounded-md bg-green-600 px-6 py-2 text-sm font-semibold text-white hover:bg-green-500"
-            >
-              Download All
-            </button>
-          )}
-
+          {/* There's no real "Download All" or "didProcess" because it's not implemented */}
           <button
             onClick={handleClearAll}
             className="rounded-md bg-gray-300 px-6 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-400"

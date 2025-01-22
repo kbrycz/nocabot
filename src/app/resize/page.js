@@ -17,6 +17,7 @@ export default function ResizePage() {
   const [ratio, setRatio] = useState(0.75);
 
   const [isResizing, setIsResizing] = useState(false);
+  const [isDisabled, setIsDisabled] = useState(false);
   const [didProcess, setDidProcess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
@@ -52,11 +53,14 @@ export default function ResizePage() {
     setErrorMsg(null);
     setDidProcess(false);
 
+    // Start a 3-second cooldown
+    setIsDisabled(true);
+    setTimeout(() => setIsDisabled(false), 3000);
+
     try {
       const formData = new FormData();
       formData.append("width", width.toString());
       formData.append("height", height.toString());
-
       globalImages.forEach((img) => {
         formData.append("images", img.file);
       });
@@ -97,8 +101,6 @@ export default function ResizePage() {
       setGlobalImages(updated);
       setDidProcess(true);
     } catch (err) {
-      console.error("Resize error:", err);
-
       let msg = err?.message || "Resize failed.";
       if (msg.includes("Failed to fetch") || msg.includes("Load failed")) {
         msg = "Could not connect to server. Please try again later.";
@@ -209,8 +211,12 @@ export default function ResizePage() {
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <button
             onClick={handleResizeAll}
-            disabled={isResizing}
-            className="rounded-md bg-indigo-600 px-6 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+            disabled={isDisabled}
+            className={`rounded-md px-6 py-2 text-sm font-semibold text-white ${
+              isDisabled
+                ? "bg-indigo-300 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-500"
+            }`}
           >
             {isResizing
               ? "Resizing..."

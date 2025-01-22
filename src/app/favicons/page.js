@@ -10,17 +10,30 @@ import { saveAs } from "file-saver";
 export default function FaviconsPage() {
   const { globalImages, clearAllImages } = useImageContext();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDisabled, setIsDisabled] = useState(false);
   const [didProcess, setDidProcess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  // We'll store the generated data for each image in the same order as globalImages.
-  // Each entry is { fav16Url, fav32Url, icoUrl }, or null if generation failed.
+  // We'll store the generated data for each image in the same order as globalImages
+  // Each entry is { filename, fav16Url, fav32Url, icoUrl } or null
   const [faviconResults, setFaviconResults] = useState([]);
+
+  const b64ToBlob = (b64Data, contentType) => {
+    const binary = atob(b64Data);
+    const array = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      array[i] = binary.charCodeAt(i);
+    }
+    return new Blob([array], { type: contentType });
+  };
 
   const handleGenerateAll = async () => {
     if (globalImages.length === 0) return;
 
     setIsGenerating(true);
+    setIsDisabled(true);
+    setTimeout(() => setIsDisabled(false), 3000);
+
     setErrorMsg(null);
     setDidProcess(false);
     setFaviconResults([]);
@@ -45,9 +58,8 @@ export default function FaviconsPage() {
         throw new Error("No data returned from server");
       }
 
-      // data.images is an array of objects: { filename, fav16_b64, fav32_b64, ico_b64 }
       const newResults = data.images.map((item) => {
-        // Convert base64 to URLs
+        // Convert base64 to Blob URLs
         const fav16Blob = b64ToBlob(item.fav16_b64, "image/png");
         const fav16Url = URL.createObjectURL(fav16Blob);
 
@@ -79,16 +91,15 @@ export default function FaviconsPage() {
     }
   };
 
-  // Download "one" image's favicon set as a mini-zip with 3 files
+  // Download one image's mini-zip
   const handleDownloadOne = (index) => {
     const res = faviconResults[index];
     if (!res) return;
 
-    const origName = res.filename.replace(/\.[^/.]+$/, ""); // remove extension
+    const origName = res.filename.replace(/\.[^/.]+$/, "");
     const zip = new JSZip();
     const folder = zip.folder(`${origName}_favicons`);
 
-    // fetch blobs from each URL
     Promise.all([
       fetch(res.fav16Url).then((r) => r.blob()),
       fetch(res.fav32Url).then((r) => r.blob()),
@@ -104,14 +115,14 @@ export default function FaviconsPage() {
     });
   };
 
-  // Download all images' favicons in a single zip, with subfolders
+  // Download all favicons in a single big zip
   const handleDownloadAll = () => {
     if (!didProcess || faviconResults.length === 0) return;
 
     const zip = new JSZip();
     const rootFolder = zip.folder("all_favicons");
 
-    const promises = faviconResults.map((res, idx) => {
+    const promises = faviconResults.map((res) => {
       const origName = res.filename.replace(/\.[^/.]+$/, "");
       const subFolder = rootFolder.folder(`${origName}_favicons`);
 
@@ -140,15 +151,6 @@ export default function FaviconsPage() {
     setErrorMsg(null);
   };
 
-  const b64ToBlob = (b64Data, contentType) => {
-    const binary = atob(b64Data);
-    const array = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      array[i] = binary.charCodeAt(i);
-    }
-    return new Blob([array], { type: contentType });
-  };
-
   return (
     <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
       <h1 className="text-3xl font-bold text-center text-gray-800">Favicons</h1>
@@ -163,7 +165,11 @@ export default function FaviconsPage() {
       <div className="mt-6">
         <GlobalUploader
           didProcess={didProcess}
-          onDownloadOne={handleDownloadOne}
+          onDownloadOne={(index) => {
+            if (faviconResults[index]) {
+              handleDownloadOne(index);
+            }
+          }}
         />
       </div>
 
@@ -171,8 +177,12 @@ export default function FaviconsPage() {
         <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
           <button
             onClick={handleGenerateAll}
-            disabled={isGenerating}
-            className="rounded-md bg-indigo-600 px-6 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+            disabled={isDisabled}
+            className={`rounded-md px-6 py-2 text-sm font-semibold text-white ${
+              isDisabled
+                ? "bg-indigo-300 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-500"
+            }`}
           >
             {isGenerating
               ? "Generating..."

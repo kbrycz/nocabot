@@ -45,7 +45,7 @@ export default function GlobalUploader({ didProcess, onDownloadOne }) {
     >
       {/* If no images, show the + icon and text in the center */}
       {globalImages.length === 0 && (
-        <div className="flex flex-col items-center justify-center text-center pointer-events-none">
+        <div className="pointer-events-none flex flex-col items-center justify-center text-center">
           <PlusIcon className="h-10 w-10 text-[#0984e3]" />
           <p className="mt-2 text-sm text-gray-600">
             Drag &amp; Drop or Click to Upload <br /> (up to 5)
@@ -55,11 +55,11 @@ export default function GlobalUploader({ didProcess, onDownloadOne }) {
 
       {/* If we have images, show them in a row (or grid) within the same box */}
       {globalImages.length > 0 && (
-        <div className="flex flex-wrap justify-center gap-4 pointer-events-none">
+        <div className="pointer-events-none flex flex-wrap justify-center gap-4">
           {globalImages.map((img, idx) => (
             <div
               key={idx}
-              className="relative h-40 w-40 overflow-hidden rounded-md border border-gray-200 bg-gray-50 pointer-events-auto"
+              className="pointer-events-auto relative h-40 w-40 overflow-hidden rounded-md border border-gray-200 bg-gray-50"
             >
               {/* X button (top-right) */}
               <button

@@ -9,11 +9,12 @@ import GlobalUploader from "@/components/ui/GlobalUploader";
 
 /**
  * This page sends all uploaded images to /app-icon,
- * which resizes them to 1024x1024 and compresses at level=5 (quality=50).
+ * which resizes them to 1024x1024 and compresses at level=5.
  */
 export default function AppIconPage() {
-  const { globalImages, setGlobalImages, clearAllImages} = useImageContext();
+  const { globalImages, setGlobalImages, clearAllImages } = useImageContext();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDisabled, setIsDisabled] = useState(false); // 3-sec cooldown
   const [didProcess, setDidProcess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
@@ -22,6 +23,10 @@ export default function AppIconPage() {
     setIsGenerating(true);
     setErrorMsg(null);
     setDidProcess(false);
+
+    // Start cooldown so user can't re-click
+    setIsDisabled(true);
+    setTimeout(() => setIsDisabled(false), 3000);
 
     try {
       const formData = new FormData();
@@ -47,7 +52,6 @@ export default function AppIconPage() {
       const updated = globalImages.map((img, idx) => {
         const srv = data.images[idx];
         if (srv?.icon_b64) {
-          // Convert base64 to Blob
           const binary = atob(srv.icon_b64);
           const array = new Uint8Array(binary.length);
           for (let i = 0; i < binary.length; i++) {
@@ -74,11 +78,11 @@ export default function AppIconPage() {
       setGlobalImages(updated);
       setDidProcess(true);
     } catch (err) {
-        let msg = err?.message || "App icon conversion failed.";
-        // If fetch fails or server not reachable:
-        if (msg.includes("Failed to fetch") || msg.includes("Load failed")) {
-          msg = "Could not connect to server. Please try again later.";
-        }
+      let msg = err?.message || "App icon conversion failed.";
+      if (msg.includes("Failed to fetch") || msg.includes("Load failed")) {
+        msg = "Could not connect to server. Please try again later.";
+      }
+      setErrorMsg(msg);
     } finally {
       setIsGenerating(false);
     }
@@ -89,7 +93,7 @@ export default function AppIconPage() {
     if (!img) return;
     const link = document.createElement("a");
     link.href = img.url;
-    link.download = img.file.name; // already has _app_icon in the name
+    link.download = img.file.name; // includes _app_icon
     link.click();
   };
 
@@ -103,7 +107,6 @@ export default function AppIconPage() {
       const img = globalImages[i];
       const response = await fetch(img.url);
       const blob = await response.blob();
-
       folder.file(img.file.name, blob);
     }
 
@@ -118,7 +121,7 @@ export default function AppIconPage() {
 
   return (
     <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
-    <h1 className="text-3xl font-bold text-center text-gray-800">App Icon</h1>
+      <h1 className="text-3xl font-bold text-center text-gray-800">App Icon</h1>
       <p className="mt-2 text-sm text-center text-gray-600">
         Turn any image into a 1024×1024 compressed app icon (quality=5).
       </p>
@@ -135,8 +138,12 @@ export default function AppIconPage() {
         <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
           <button
             onClick={handleGenerateAll}
-            disabled={isGenerating}
-            className="rounded-md bg-indigo-600 px-6 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+            disabled={isDisabled}
+            className={`rounded-md px-6 py-2 text-sm font-semibold text-white ${
+              isDisabled
+                ? "bg-indigo-300 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-500"
+            }`}
           >
             {isGenerating
               ? "Generating..."

@@ -11,6 +11,7 @@ export default function ConvertPage() {
   const { globalImages, setGlobalImages, clearAllImages } = useImageContext();
   const [targetFormat, setTargetFormat] = useState("png");
   const [isConverting, setIsConverting] = useState(false);
+  const [isDisabled, setIsDisabled] = useState(false);
   const [didProcess, setDidProcess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
@@ -20,13 +21,14 @@ export default function ConvertPage() {
     setDidProcess(false);
     setErrorMsg(null);
 
+    // 3-sec cooldown
+    setIsDisabled(true);
+    setTimeout(() => setIsDisabled(false), 3000);
+
     try {
       const formData = new FormData();
       formData.append("target_format", targetFormat);
-
-      globalImages.forEach((img) => {
-        formData.append("images", img.file);
-      });
+      globalImages.forEach((img) => formData.append("images", img.file));
 
       const res = await fetch(`${SERVER_BASE_URL}/convert`, {
         method: "POST",
@@ -66,8 +68,6 @@ export default function ConvertPage() {
       setGlobalImages(updated);
       setDidProcess(true);
     } catch (err) {
-      console.error("Convert error:", err);
-
       let msg = err?.message || "Conversion failed.";
       if (msg.includes("Failed to fetch") || msg.includes("Load failed")) {
         msg = "Could not connect to server. Please try again later.";
@@ -125,7 +125,6 @@ export default function ConvertPage() {
         <div className="mt-4 text-center text-sm text-red-600">{errorMsg}</div>
       )}
 
-      {/* Format dropdown */}
       <div className="mt-6 flex justify-center">
         <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
           Convert to:
@@ -159,8 +158,12 @@ export default function ConvertPage() {
         <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
           <button
             onClick={handleConvertAll}
-            disabled={isConverting}
-            className="rounded-md bg-indigo-600 px-6 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+            disabled={isDisabled}
+            className={`rounded-md px-6 py-2 text-sm font-semibold text-white ${
+              isDisabled
+                ? "bg-indigo-300 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-500"
+            }`}
           >
             {isConverting
               ? "Converting..."
