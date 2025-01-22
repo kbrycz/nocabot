@@ -146,7 +146,7 @@ export default function FaviconsPage() {
   };
 
   return (
-    <div className="mx-auto mt-10 mb-10 w-full max-w-4xl bg-white p-6 rounded-md shadow">
+    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
       <h1 className="text-3xl font-bold text-center text-gray-800">Favicons</h1>
       <p className="mt-2 text-sm text-center text-gray-600">
         Upload up to 5 images, then generate your 16×16, 32×32, and .ico favicons.

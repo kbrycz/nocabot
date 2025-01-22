@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import "./globals.css";
+import { DotPattern } from "@/components/ui/DotPattern";
 import Link from "next/link";
+import React, { useState } from "react";
 import {
   ArrowsRightLeftIcon,
   PhotoIcon,
@@ -15,14 +17,21 @@ import {
 } from "@heroicons/react/24/outline";
 
 import { ImageProvider } from "@/context/ImageProvider";
-import { DotPattern } from "@/components/ui/DotPattern";
 
 // Nav arrays
 const featuresNav = [
   { name: "Home", href: "/", icon: <HomeIcon className="h-6 w-6" /> },
-  { name: "Compress", href: "/compress", icon: <ArrowsPointingInIcon className="h-6 w-6" /> },
+  {
+    name: "Compress",
+    href: "/compress",
+    icon: <ArrowsPointingInIcon className="h-6 w-6" />,
+  },
   { name: "Resize", href: "/resize", icon: <ScissorsIcon className="h-6 w-6" /> },
-  { name: "Convert", href: "/convert", icon: <ArrowsRightLeftIcon className="h-6 w-6" /> },
+  {
+    name: "Convert",
+    href: "/convert",
+    icon: <ArrowsRightLeftIcon className="h-6 w-6" />,
+  },
   { name: "Remove BG", href: "/remove-bg", icon: <PhotoIcon className="h-6 w-6" /> },
 ];
 
@@ -31,21 +40,22 @@ const specialtyNav = [
   { name: "App Icon", href: "/app-icon", icon: <DevicePhoneMobileIcon className="h-6 w-6" /> },
 ];
 
-// Shared sidebar content for both mobile & desktop
+// Shared sidebar content
 function SidebarContent({ onLinkClick }) {
   return (
-    <nav className="flex flex-col gap-8 h-full">
-      {/* Logo -> Home */}
-      <div className="flex items-center gap-2 text-2xl font-bold text-[#0984e3]">
-        <Link href="/" onClick={() => onLinkClick?.()}>
-          Nocabot
-        </Link>
-      </div>
+    <nav className="flex flex-col h-full">
+      {/* Show the top image, bigger than before */}
+      <Link href="/" onClick={() => onLinkClick?.()} className="block text-center">
+        <img
+          src="/images/nocabot.png"
+          alt="Nocabot"
+          className="h-10 w-auto mx-auto mt-2"
+        />
+      </Link>
 
-      {/* Navigation */}
-      <ul className="mt-4 flex flex-col gap-y-6 overflow-y-auto">
+      <ul className="mt-4 flex flex-col gap-y-6 overflow-y-auto px-1">
         <li>
-          <ul role="list" className="-mx-2 space-y-1">
+          <ul role="list" className="space-y-1">
             {featuresNav.map((item) => (
               <li key={item.name}>
                 <Link
@@ -67,7 +77,7 @@ function SidebarContent({ onLinkClick }) {
 
         <li>
           <div className="mb-2 px-2 text-xs font-semibold text-gray-400">Specialty</div>
-          <ul role="list" className="-mx-2 space-y-1">
+          <ul role="list" className="space-y-1">
             {specialtyNav.map((item) => (
               <li key={item.name}>
                 <Link
@@ -87,29 +97,35 @@ function SidebarContent({ onLinkClick }) {
   );
 }
 
+export const metadata = {
+  title: "Nocabot",
+  description: "Your image-based tool suite",
+};
+
 export default function LayoutClient({ children }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <ImageProvider>
       {/* 
-        Full-screen container:
-        - flex layout
-        - min-h-screen to fill vertical space
-        - font-sans ensures Geist (or your chosen font) is used
+        Full-screen container, no horizontal scroll
       */}
-      <div className="flex min-h-screen font-sans bg-white">
-        {/* DESKTOP SIDEBAR: shown at md+; pinned left */}
-        <aside className="hidden md:block md:h-full md:flex-none w-64 border-r border-gray-200 bg-white px-6 py-4">
+      <div className="flex h-screen w-screen overflow-hidden font-sans bg-white">
+        {/* DESKTOP SIDEBAR (pinned left, full height) */}
+        <aside className="hidden md:flex md:flex-col w-64 h-full shrink-0 border-r border-gray-200 bg-white px-4 py-2">
           <SidebarContent />
         </aside>
 
-        {/* MAIN AREA (top bar on mobile, content below/next to it) */}
-        <div className="flex-1 flex flex-col">
-          {/* MOBILE TOP BAR: only visible if below md */}
-          <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-gray-200">
-            <Link href="/" className="text-xl font-bold text-[#0984e3]">
-              Nocabot
+        {/* MAIN AREA */}
+        <div className="relative flex-1 flex flex-col overflow-hidden">
+          {/* Mobile top bar */}
+          <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-gray-200 shrink-0">
+            <Link href="/" className="block">
+              <img
+                src="/images/nocabot.png"
+                alt="Nocabot"
+                className="h-10 w-auto"
+              />
             </Link>
             <button
               onClick={() => setMobileMenuOpen(true)}
@@ -119,24 +135,22 @@ export default function LayoutClient({ children }) {
             </button>
           </div>
 
-          {/* Content area. DotPattern is placed behind the children. */}
+          {/* Content container that can scroll vertically */}
           <div className="relative flex-1 overflow-auto p-8">
             <DotPattern />
             <div className="relative z-10">{children}</div>
           </div>
         </div>
 
-        {/* MOBILE OFF-CANVAS SIDEBAR if open */}
+        {/* MOBILE OFF-CANVAS SIDEBAR */}
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 flex">
-            {/* Dark overlay */}
+            {/* Overlay */}
             <div
               className="absolute inset-0 bg-black/50"
               onClick={() => setMobileMenuOpen(false)}
             />
-            {/* Slide-in panel: pinned to left, full height */}
-            <div className="relative w-64 bg-white p-6 shadow h-full">
-              {/* Close button (icon only) */}
+            <div className="relative w-64 bg-white p-4 shadow h-full">
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="mb-4 text-gray-700 hover:text-gray-900"

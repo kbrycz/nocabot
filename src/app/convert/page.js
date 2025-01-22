@@ -110,8 +110,8 @@ export default function ConvertPage() {
   };
 
   return (
-    <div className="mx-auto mt-10 mb-10 w-full max-w-4xl bg-white p-6 rounded-md shadow">
-      <h1 className="text-3xl font-bold text-center text-gray-800">Convert Images</h1>
+    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
+    <h1 className="text-3xl font-bold text-center text-gray-800">Convert Images</h1>
       <p className="mt-2 text-sm text-center text-gray-600">
         Upload up to 5 images and choose a new format to convert them.
       </p>

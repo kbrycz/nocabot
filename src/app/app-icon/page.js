@@ -109,8 +109,8 @@ export default function AppIconPage() {
   };
 
   return (
-    <div className="mx-auto mt-10 mb-10 w-full max-w-4xl bg-white p-6 rounded-md shadow">
-      <h1 className="text-3xl font-bold text-center text-gray-800">App Icon</h1>
+    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
+    <h1 className="text-3xl font-bold text-center text-gray-800">App Icon</h1>
       <p className="mt-2 text-sm text-center text-gray-600">
         Turn any image into a 1024×1024 compressed app icon (quality=5).
       </p>

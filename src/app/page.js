@@ -10,6 +10,9 @@ import {
   DevicePhoneMobileIcon, // App Icon
 } from "@heroicons/react/24/outline";
 
+// Import your AuroraText from the new local file
+import { AuroraText } from "@/components/ui/AuroraText";
+
 function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
 }
@@ -67,63 +70,63 @@ const actions = [
 
 export default function HomePage() {
   return (
-    <div className="mx-auto mt-10 w-full max-w-5xl px-4">
-      {/* Single white background container */}
-      <div className="bg-white p-8 rounded-md shadow-md">
-        <h1 className="text-5xl font-extrabold text-gray-800 text-center">
-          Welcome to Nocabot
-        </h1>
-        <p className="mt-2 text-lg text-gray-600 text-center">
-          A suite of easy-to-use image tools for every workflow.
-        </p>
+    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
+      {/* Heading with smaller font, to match other pages */}
+      <h1 className="text-3xl font-bold tracking-tight text-center text-gray-800">
+        Welcome to <AuroraText>Nocabot</AuroraText>
+      </h1>
 
-        {/* The actions grid (still within the same white container) */}
-        <div className="mt-8 divide-y divide-gray-200 overflow-hidden rounded-lg bg-gray-100 shadow sm:grid sm:grid-cols-2 sm:gap-px sm:divide-y-0">
-          {actions.map((action, idx) => (
-            <div
-              key={action.title}
-              className={classNames(
-                idx === 0 ? "rounded-tl-lg rounded-tr-lg sm:rounded-tr-none" : "",
-                idx === 1 ? "sm:rounded-tr-lg" : "",
-                idx === actions.length - 2 ? "sm:rounded-bl-lg" : "",
-                idx === actions.length - 1
-                  ? "rounded-bl-lg rounded-br-lg sm:rounded-bl-none"
-                  : "",
-                "group relative bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500"
-              )}
-            >
-              <div>
-                <span
-                  className={classNames(
-                    action.iconBackground,
-                    action.iconForeground,
-                    "inline-flex rounded-lg p-3 ring-4 ring-white"
-                  )}
-                >
-                  <action.icon aria-hidden="true" className="h-6 w-6" />
-                </span>
-              </div>
-              <div className="mt-8">
-                <h3 className="text-base font-semibold text-gray-900">
-                  <a href={action.href} className="focus:outline-none">
-                    <span aria-hidden="true" className="absolute inset-0" />
-                    {action.title}
-                  </a>
-                </h3>
-                <p className="mt-2 text-sm text-gray-500">{action.description}</p>
-              </div>
+      {/* Subtitle underneath */}
+      <p className="mt-2 text-sm text-center text-gray-600">
+        A suite of easy-to-use image tools for every workflow.
+      </p>
+
+      {/* The actions grid below */}
+      <div className="mt-8 divide-y divide-gray-200 overflow-hidden rounded-lg bg-gray-100 shadow sm:grid sm:grid-cols-2 sm:gap-px sm:divide-y-0">
+        {actions.map((action, idx) => (
+          <div
+            key={action.title}
+            className={classNames(
+              idx === 0 ? "rounded-tl-lg rounded-tr-lg sm:rounded-tr-none" : "",
+              idx === 1 ? "sm:rounded-tr-lg" : "",
+              idx === actions.length - 2 ? "sm:rounded-bl-lg" : "",
+              idx === actions.length - 1
+                ? "rounded-bl-lg rounded-br-lg sm:rounded-bl-none"
+                : "",
+              "group relative bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500"
+            )}
+          >
+            <div>
               <span
-                aria-hidden="true"
-                className="pointer-events-none absolute right-6 top-6 text-gray-300 group-hover:text-gray-400"
+                className={classNames(
+                  action.iconBackground,
+                  action.iconForeground,
+                  "inline-flex rounded-lg p-3 ring-4 ring-white"
+                )}
               >
-                {/* Decorative diagonal icon in top-right corner */}
-                <svg fill="currentColor" viewBox="0 0 24 24" className="h-6 w-6">
-                  <path d="M20 4h1a1 1 0 00-1-1v1zm-1 12a1 1 0 102 0h-2zM8 3a1 1 0 000 2V3zM3.293 19.293a1 1 0 101.414 1.414l-1.414-1.414zM19 4v12h2V4h-2zm1-1H8v2h12V3zm-.707.293l-16 16 1.414 1.414 16-16-1.414-1.414z" />
-                </svg>
+                <action.icon aria-hidden="true" className="h-6 w-6" />
               </span>
             </div>
-          ))}
-        </div>
+            <div className="mt-8">
+              <h3 className="text-base font-semibold text-gray-900">
+                <a href={action.href} className="focus:outline-none">
+                  <span aria-hidden="true" className="absolute inset-0" />
+                  {action.title}
+                </a>
+              </h3>
+              <p className="mt-2 text-sm text-gray-500">{action.description}</p>
+            </div>
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute right-6 top-6 text-gray-300 group-hover:text-gray-400"
+            >
+              {/* The small diagonal icon in top-right corner */}
+              <svg fill="currentColor" viewBox="0 0 24 24" className="h-6 w-6">
+                <path d="M20 4h1a1 1 0 00-1-1v1zm-1 12a1 1 0 102 0h-2zM8 3a1 1 0 000 2V3zM3.293 19.293a1 1 0 101.414 1.414l-1.414-1.414zM19 4v12h2V4h-2zm1-1H8v2h12V3zm-.707.293l-16 16 1.414 1.414 16-16-1.414-1.414z" />
+              </svg>
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );

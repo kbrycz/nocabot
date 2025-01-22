@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useImageContext } from "@/context/ImageProvider";
 import GlobalUploader from "@/components/ui/GlobalUploader";
+import { SERVER_BASE_URL } from "@/config";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
@@ -20,30 +21,48 @@ export default function RemoveBGPage() {
     setDidProcess(false);
 
     try {
-      // Simulate a short delay as if calling a server
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      const formData = new FormData();
+      globalImages.forEach((img) => formData.append("images", img.file));
 
-      // For demonstration: treat each existing image as "no-bg" version of itself
-      const updated = [];
-      for (let i = 0; i < globalImages.length; i++) {
-        const original = globalImages[i];
-        // Fetch the existing image blob
-        const response = await fetch(original.url);
-        const blob = await response.blob();
-
-        // Create new url + file (pretend it's background-removed PNG)
-        const newUrl = URL.createObjectURL(blob);
-        const origName = original.file.name.replace(/\.[^/.]+$/, "");
-        const newFile = new File([blob], `${origName}_no-bg.png`, {
-          type: "image/png",
-        });
-
-        updated.push({
-          ...original,
-          url: newUrl,
-          file: newFile,
-        });
+      const res = await fetch(`${SERVER_BASE_URL}/remove-bg`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Server error: ${res.status} - ${text}`);
       }
+
+      const data = await res.json();
+      if (!data.images) {
+        throw new Error("No images returned from server.");
+      }
+
+      const updated = globalImages.map((img, idx) => {
+        const srv = data.images[idx];
+        if (srv?.removed_b64) {
+          const binary = atob(srv.removed_b64);
+          const array = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) {
+            array[i] = binary.charCodeAt(i);
+          }
+          // PNG with alpha channel
+          const blob = new Blob([array], { type: "image/png" });
+          const newUrl = URL.createObjectURL(blob);
+
+          const origName = img.file.name.replace(/\.[^/.]+$/, "");
+          const newFile = new File([blob], `${origName}_no-bg.png`, {
+            type: "image/png",
+          });
+
+          return {
+            ...img,
+            url: newUrl,
+            file: newFile,
+          };
+        }
+        return img;
+      });
 
       setGlobalImages(updated);
       setDidProcess(true);
@@ -60,7 +79,7 @@ export default function RemoveBGPage() {
     if (!img) return;
     const link = document.createElement("a");
     link.href = img.url;
-    link.download = img.file.name; // already has _no-bg.png in the name
+    link.download = img.file.name; // file name includes _no-bg
     link.click();
   };
 
@@ -83,10 +102,10 @@ export default function RemoveBGPage() {
   };
 
   return (
-    <div className="mx-auto mt-10 mb-10 w-full max-w-4xl bg-white p-6 rounded-md shadow">
+    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
       <h1 className="text-3xl font-bold text-center text-gray-800">Remove Background</h1>
       <p className="mt-2 text-sm text-center text-gray-600">
-        Automatically remove the background from up to 5 images (simulated).
+        Automatically remove the background from up to 5 images using rembg.
       </p>
 
       {errorMsg && (
@@ -98,7 +117,7 @@ export default function RemoveBGPage() {
       </div>
 
       {globalImages.length > 0 && (
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <button
             onClick={handleRemoveBgAll}
             disabled={isRemoving}
