@@ -17,6 +17,8 @@ import {
 } from "@heroicons/react/24/outline";
 
 import { ImageProvider } from "@/context/ImageProvider";
+// Import your AuroraText
+import { AuroraText } from "@/components/ui/AuroraText";
 
 // Nav arrays
 const featuresNav = [
@@ -40,20 +42,22 @@ const specialtyNav = [
   { name: "App Icon", href: "/app-icon", icon: <DevicePhoneMobileIcon className="h-6 w-6" /> },
 ];
 
-// Shared sidebar content
+// Sidebar content
 function SidebarContent({ onLinkClick }) {
   return (
-    <nav className="flex flex-col h-full">
-      {/* Show the top image, bigger than before */}
-      <Link href="/" onClick={() => onLinkClick?.()} className="block text-center">
-        <img
-          src="/images/nocabot.png"
-          alt="Nocabot"
-          className="h-10 w-auto mx-auto mt-2"
-        />
+    <nav className="flex flex-col h-full items-center">
+      {/* AuroraText instead of an image */}
+      <Link
+        href="/"
+        onClick={() => onLinkClick?.()}
+        className="mt-4 block text-center"
+      >
+        <AuroraText className="text-2xl font-bold tracking-tight text-gray-800">
+          Nocabot
+        </AuroraText>
       </Link>
 
-      <ul className="mt-4 flex flex-col gap-y-6 overflow-y-auto px-1">
+      <ul className="mt-8 flex flex-col gap-y-6 overflow-y-auto px-1 w-full">
         <li>
           <ul role="list" className="space-y-1">
             {featuresNav.map((item) => (
@@ -97,42 +101,37 @@ function SidebarContent({ onLinkClick }) {
   );
 }
 
-export const metadata = {
-  title: "Nocabot",
-  description: "Your image-based tool suite",
-};
-
 export default function LayoutClient({ children }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <ImageProvider>
       {/* 
-        Full-screen container, no horizontal scroll
+        Full-screen container, pinned sidebar on desktop,
+        no horizontal scroll: "w-screen overflow-hidden"
       */}
       <div className="flex h-screen w-screen overflow-hidden font-sans bg-white">
         {/* DESKTOP SIDEBAR (pinned left, full height) */}
-        <aside className="hidden md:flex md:flex-col w-64 h-full shrink-0 border-r border-gray-200 bg-white px-4 py-2">
+        <aside className="hidden md:flex md:flex-col w-64 h-full border-r border-gray-200 bg-white px-4 py-2">
           <SidebarContent />
         </aside>
 
         {/* MAIN AREA */}
         <div className="relative flex-1 flex flex-col overflow-hidden">
           {/* Mobile top bar */}
-          <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-gray-200 shrink-0">
-            <Link href="/" className="block">
-              <img
-                src="/images/nocabot.png"
-                alt="Nocabot"
-                className="h-10 w-auto"
-              />
-            </Link>
+          <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-gray-200">
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="text-gray-600 hover:text-gray-800"
             >
               <Bars3Icon className="h-6 w-6" />
             </button>
+            {/* AuroraText in the mobile top bar, smaller */}
+            <Link href="/" className="block">
+              <AuroraText className="text-xl font-bold tracking-tight text-gray-800">
+                Nocabot
+              </AuroraText>
+            </Link>
           </div>
 
           {/* Content container that can scroll vertically */}

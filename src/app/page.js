@@ -2,15 +2,14 @@
 
 import React from "react";
 import {
-  ArrowsPointingInIcon, // Compress
-  ScissorsIcon,          // Resize
-  ArrowsRightLeftIcon,   // Convert
-  PhotoIcon,             // Remove BG
-  GlobeAltIcon,          // Favicons
-  DevicePhoneMobileIcon, // App Icon
+  ArrowsPointingInIcon,
+  ScissorsIcon,
+  ArrowsRightLeftIcon,
+  PhotoIcon,
+  GlobeAltIcon,
+  DevicePhoneMobileIcon,
 } from "@heroicons/react/24/outline";
 
-// Import your AuroraText from the new local file
 import { AuroraText } from "@/components/ui/AuroraText";
 
 function classNames(...classes) {
@@ -71,17 +70,13 @@ const actions = [
 export default function HomePage() {
   return (
     <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
-      {/* Heading with smaller font, to match other pages */}
       <h1 className="text-3xl font-bold tracking-tight text-center text-gray-800">
-        Welcome to <AuroraText>Nocabot</AuroraText>
+        Welcome to <AuroraText className="text-3xl">Nocabot</AuroraText>
       </h1>
-
-      {/* Subtitle underneath */}
       <p className="mt-2 text-sm text-center text-gray-600">
         A suite of easy-to-use image tools for every workflow.
       </p>
 
-      {/* The actions grid below */}
       <div className="mt-8 divide-y divide-gray-200 overflow-hidden rounded-lg bg-gray-100 shadow sm:grid sm:grid-cols-2 sm:gap-px sm:divide-y-0">
         {actions.map((action, idx) => (
           <div
@@ -120,7 +115,6 @@ export default function HomePage() {
               aria-hidden="true"
               className="pointer-events-none absolute right-6 top-6 text-gray-300 group-hover:text-gray-400"
             >
-              {/* The small diagonal icon in top-right corner */}
               <svg fill="currentColor" viewBox="0 0 24 24" className="h-6 w-6">
                 <path d="M20 4h1a1 1 0 00-1-1v1zm-1 12a1 1 0 102 0h-2zM8 3a1 1 0 000 2V3zM3.293 19.293a1 1 0 101.414 1.414l-1.414-1.414zM19 4v12h2V4h-2zm1-1H8v2h12V3zm-.707.293l-16 16 1.414 1.414 16-16-1.414-1.414z" />
               </svg>
