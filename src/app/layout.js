@@ -4,7 +4,7 @@ import LayoutClient from "./LayoutClient"; // "use client" component
 export const metadata = {
   title: "Nocabot – The Ultimate Image Tool Suite",
   description:
-    "Nocabot.com – Compress, Resize, Convert, Remove BG, Generate Favicons, & Create App Icons. All in one suite.",
+    "Nocabot.com – Compress, Resize, Convert, Remove BG, Generate Favicons, Create App Icons, and more.",
   icons: {
     icon: "/favicon-32x32.png",
     shortcut: "/favicon.ico",
@@ -13,8 +13,7 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
-  // We'll hide <body> until the script sets .dark if needed
-  // Use a deferred script so document.body won't be null
+  // Hide <body> until we've applied .dark if needed, to prevent dark-mode flash
   const noFlashScript = `
     document.addEventListener("DOMContentLoaded", function() {
       try {
@@ -30,7 +29,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Example: Google Analytics */}
+        {/* Example: Google Analytics script */}
         <script
           async
           src="https://www.googletagmanager.com/gtag/js?id=G-FRD68YWYKY"
@@ -45,11 +44,10 @@ export default function RootLayout({ children }) {
             `,
           }}
         />
-        {/* Hide body until dark-mode script runs */}
+        {/* Hide body until we set dark/light mode to avoid flicker */}
         <style>{`body { display: none; }`}</style>
         <script defer dangerouslySetInnerHTML={{ __html: noFlashScript }} />
       </head>
-
       <body className="min-h-screen flex flex-col font-sans bg-white dark:bg-gray-900">
         <LayoutClient>{children}</LayoutClient>
       </body>

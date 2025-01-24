@@ -9,12 +9,19 @@ import {
   PhotoIcon,
   GlobeAltIcon,
   DevicePhoneMobileIcon,
+  FaceSmileIcon, // new for Meme Maker
+  InformationCircleIcon, // new for About
 } from "@heroicons/react/24/outline";
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
+/**
+ * Updated actions array:
+ * - Meme Maker => "Meme Maker (Coming Soon)"
+ * - About => brand-new item with i icon
+ */
 const actions = [
   {
     title: "Compress Images",
@@ -46,7 +53,7 @@ const actions = [
     icon: PhotoIcon,
     iconFg: "text-indigo-700 dark:text-white",
     iconBg: "bg-indigo-50 dark:bg-indigo-900",
-    description: "Automatically remove backgrounds (simulated).",
+    description: "Automatically remove backgrounds (Coming soon).",
   },
   {
     title: "Generate Favicons",
@@ -64,11 +71,38 @@ const actions = [
     iconBg: "bg-yellow-50 dark:bg-yellow-900",
     description: "Transform any image into a 1024×1024 compressed app icon.",
   },
+  {
+    title: "Meme Maker (Coming Soon)",
+    href: "/meme",
+    icon: FaceSmileIcon,
+    iconFg: "text-pink-700 dark:text-white",
+    iconBg: "bg-pink-50 dark:bg-pink-900",
+    description: "Create fun memes with base images, overlays, and text (not yet active).",
+  },
+  {
+    title: "About",
+    href: "/about",
+    icon: InformationCircleIcon,
+    iconFg: "text-gray-700 dark:text-white",
+    iconBg: "bg-gray-50 dark:bg-gray-900",
+    description: "Important disclaimers and info about Nocabot.",
+  },
 ];
 
 export default function HomePage() {
   return (
-    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white dark:bg-gray-800 p-12 rounded-md border border-gray-200 dark:border-gray-700 shadow dark:shadow-md dark:shadow-black/60 font-sans">
+    <div
+      className="
+        mx-auto mt-10 mb-10 w-full
+        sm:w-[95%] md:w-[85%]
+        bg-white dark:bg-gray-800
+        p-12
+        rounded-md
+        dark:border-gray-700
+        shadow
+        font-sans
+      "
+    >
       <h1 className="text-3xl font-bold tracking-tight text-center text-gray-800 dark:text-gray-100">
         Welcome to <AuroraText className="text-3xl">Nocabot</AuroraText>
       </h1>
@@ -77,20 +111,30 @@ export default function HomePage() {
         A suite of easy-to-use image tools for every workflow.
       </p>
 
-      <div className="mt-8 divide-y divide-gray-200 dark:divide-gray-700 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700 shadow dark:shadow-black/50 sm:grid sm:grid-cols-2 sm:gap-px sm:divide-y-0">
+      <div
+        className="
+          mt-8
+          divide-y divide-gray-200 dark:divide-gray-700
+          overflow-hidden
+          rounded-lg
+          bg-gray-100 dark:bg-gray-700
+          shadow dark:shadow-black/50
+          sm:grid sm:grid-cols-2 sm:gap-px sm:divide-y-0
+        "
+      >
         {actions.map((action, idx) => (
           <div
             key={action.title}
             className={classNames(
-              // corners on the top row
               idx === 0 ? "rounded-tl-lg rounded-tr-lg sm:rounded-tr-none" : "",
-              // second in first row => sm:rounded-tr-lg
               idx === 1 ? "sm:rounded-tr-lg" : "",
-              // second-last => sm:rounded-bl-lg
               idx === actions.length - 2 ? "sm:rounded-bl-lg" : "",
-              // last => bottom corners
-              idx === actions.length - 1 ? "rounded-bl-lg rounded-br-lg sm:rounded-bl-none" : "",
-              "group relative bg-white dark:bg-gray-800 p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500 border-b last:border-none border-gray-200 dark:border-gray-700 sm:border-b-0 sm:border-r"
+              idx === actions.length - 1
+                ? "rounded-bl-lg rounded-br-lg sm:rounded-bl-none"
+                : "",
+              "group relative bg-white dark:bg-gray-800 p-6 " +
+              "focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500 " +
+              "border-b last:border-none border-gray-200 dark:border-gray-700 sm:border-b-0 sm:border-r"
             )}
           >
             <div>
@@ -117,6 +161,7 @@ export default function HomePage() {
               </p>
             </div>
 
+            {/* The diagonal arrow in top-right corner */}
             <span
               aria-hidden="true"
               className="pointer-events-none absolute right-6 top-6 text-gray-300 group-hover:text-gray-400"

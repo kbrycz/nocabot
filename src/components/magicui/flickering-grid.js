@@ -18,7 +18,8 @@ export function FlickeringGrid({
   width,
   height,
   className = "",
-  maxOpacity = 0.3,
+  // Make it extremely subtle
+  maxOpacity = 0.008,  // lowered from 0.03
   ...props
 }) {
   const canvasRef = useRef(null);
@@ -26,7 +27,6 @@ export function FlickeringGrid({
 
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 
-  // Convert user color to "rgba(r,g,b,"
   const memoizedColor = useMemo(() => {
     const toRGBA = (inputColor) => {
       if (typeof window === "undefined") {
@@ -36,6 +36,7 @@ export function FlickeringGrid({
       c.width = c.height = 1;
       const ctx = c.getContext("2d");
       if (!ctx) return "rgba(0,0,0,";
+
       ctx.fillStyle = inputColor;
       ctx.fillRect(0, 0, 1, 1);
       const [r, g, b] = Array.from(ctx.getImageData(0, 0, 1, 1).data);
@@ -44,7 +45,6 @@ export function FlickeringGrid({
     return toRGBA(color);
   }, [color]);
 
-  // Setup squares
   const setupCanvas = useCallback(
     (canvas, w, h) => {
       const dpr = window.devicePixelRatio || 1;
@@ -57,18 +57,18 @@ export function FlickeringGrid({
       const rows = Math.floor(h / (squareSize + gridGap));
       const squares = new Float32Array(cols * rows);
 
+      // Initialize random opacities
       for (let i = 0; i < squares.length; i++) {
         squares[i] = Math.random() * maxOpacity;
       }
-
       return { cols, rows, squares, dpr };
     },
     [squareSize, gridGap, maxOpacity]
   );
 
-  // Flicker squares randomly
   const updateSquares = useCallback(
     (squares, deltaTime) => {
+      // flicker randomly
       for (let i = 0; i < squares.length; i++) {
         if (Math.random() < flickerChance * deltaTime) {
           squares[i] = Math.random() * maxOpacity;
@@ -78,7 +78,6 @@ export function FlickeringGrid({
     [flickerChance, maxOpacity]
   );
 
-  // Draw squares
   const drawGrid = useCallback(
     (ctx, w, h, cols, rows, squares, dpr) => {
       ctx.clearRect(0, 0, w, h);
@@ -110,7 +109,6 @@ export function FlickeringGrid({
     let animationFrameId;
     let lastTime = 0;
 
-    // Update canvas size
     const updateCanvasSize = () => {
       const newW = width || container.clientWidth;
       const newH = height || container.clientHeight;
@@ -137,13 +135,12 @@ export function FlickeringGrid({
       animationFrameId = requestAnimationFrame(animate);
     };
 
-    // Listen for resizing
+    // Observe container size => recalc
     const resizeObserver = new ResizeObserver(() => {
       updateCanvasSize();
     });
     resizeObserver.observe(container);
 
-    // Start animation
     lastTime = performance.now();
     animationFrameId = requestAnimationFrame(animate);
 
@@ -154,11 +151,7 @@ export function FlickeringGrid({
   }, [setupCanvas, updateSquares, drawGrid, width, height]);
 
   return (
-    <div
-      ref={containerRef}
-      className={cn("h-full w-full", className)}
-      {...props}
-    >
+    <div ref={containerRef} className={cn("h-full w-full", className)} {...props}>
       <canvas
         ref={canvasRef}
         className="pointer-events-none"
