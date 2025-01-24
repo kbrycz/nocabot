@@ -1,5 +1,5 @@
 import "./globals.css";
-import LayoutClient from "./LayoutClient"; // "use client" component
+import LayoutClient from "./LayoutClient";
 
 export const metadata = {
   title: "Nocabot – The Ultimate Image Tool Suite",

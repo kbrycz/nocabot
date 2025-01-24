@@ -9,19 +9,14 @@ import {
   PhotoIcon,
   GlobeAltIcon,
   DevicePhoneMobileIcon,
-  FaceSmileIcon, // new for Meme Maker
-  InformationCircleIcon, // new for About
+  FaceSmileIcon,
+  InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
-/**
- * Updated actions array:
- * - Meme Maker => "Meme Maker (Coming Soon)"
- * - About => brand-new item with i icon
- */
 const actions = [
   {
     title: "Compress Images",
@@ -133,8 +128,8 @@ export default function HomePage() {
                 ? "rounded-bl-lg rounded-br-lg sm:rounded-bl-none"
                 : "",
               "group relative bg-white dark:bg-gray-800 p-6 " +
-              "focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500 " +
-              "border-b last:border-none border-gray-200 dark:border-gray-700 sm:border-b-0 sm:border-r"
+                "focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500 " +
+                "border-b last:border-none border-gray-200 dark:border-gray-700 sm:border-b-0 sm:border-r"
             )}
           >
             <div>
