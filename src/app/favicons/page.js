@@ -1,11 +1,12 @@
+// src/app/favicons/page.js
 "use client";
 
 import React, { useState } from "react";
 import { useImageContext } from "@/context/ImageProvider";
-import GlobalUploader from "@/components/ui/GlobalUploader";
 import { SERVER_BASE_URL } from "@/config";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import GlobalUploader from "@/components/ui/GlobalUploader";
 
 export default function FaviconsPage() {
   const { globalImages, clearAllImages } = useImageContext();
@@ -14,8 +15,6 @@ export default function FaviconsPage() {
   const [didProcess, setDidProcess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  // We'll store the generated data for each image in the same order as globalImages
-  // Each entry is { filename, fav16Url, fav32Url, icoUrl } or null
   const [faviconResults, setFaviconResults] = useState([]);
 
   const b64ToBlob = (b64Data, contentType) => {
@@ -28,13 +27,13 @@ export default function FaviconsPage() {
   };
 
   const handleGenerateAll = async () => {
-    if (globalImages.length === 0) return;
+    setErrorMsg(null);
 
+    if (globalImages.length === 0) return;
     setIsGenerating(true);
     setIsDisabled(true);
     setTimeout(() => setIsDisabled(false), 3000);
 
-    setErrorMsg(null);
     setDidProcess(false);
     setFaviconResults([]);
 
@@ -59,7 +58,6 @@ export default function FaviconsPage() {
       }
 
       const newResults = data.images.map((item) => {
-        // Convert base64 to Blob URLs
         const fav16Blob = b64ToBlob(item.fav16_b64, "image/png");
         const fav16Url = URL.createObjectURL(fav16Blob);
 
@@ -91,8 +89,8 @@ export default function FaviconsPage() {
     }
   };
 
-  // Download one image's mini-zip
   const handleDownloadOne = (index) => {
+    setErrorMsg(null);
     const res = faviconResults[index];
     if (!res) return;
 
@@ -115,8 +113,8 @@ export default function FaviconsPage() {
     });
   };
 
-  // Download all favicons in a single big zip
   const handleDownloadAll = () => {
+    setErrorMsg(null);
     if (!didProcess || faviconResults.length === 0) return;
 
     const zip = new JSZip();
@@ -145,16 +143,20 @@ export default function FaviconsPage() {
   };
 
   const handleClearAll = () => {
+    setErrorMsg(null);
     clearAllImages();
     setFaviconResults([]);
     setDidProcess(false);
-    setErrorMsg(null);
   };
 
   return (
-    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
-      <h1 className="text-3xl font-bold text-center text-gray-800">Favicons</h1>
-      <p className="mt-2 text-sm text-center text-gray-600">
+    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] 
+                    bg-white dark:bg-gray-800 p-12 rounded-md shadow font-sans"
+    >
+      <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-gray-100">
+        Favicons
+      </h1>
+      <p className="mt-2 text-sm text-center text-gray-600 dark:text-gray-400">
         Upload up to 5 images, then generate your 16×16, 32×32, and .ico favicons.
       </p>
 
@@ -165,10 +167,10 @@ export default function FaviconsPage() {
       <div className="mt-6">
         <GlobalUploader
           didProcess={didProcess}
-          onDownloadOne={(index) => {
-            if (faviconResults[index]) {
-              handleDownloadOne(index);
-            }
+          onDownloadOne={(idx) => faviconResults[idx] && handleDownloadOne(idx)}
+          onNewImages={() => {
+            setErrorMsg(null);
+            setDidProcess(false);
           }}
         />
       </div>
@@ -202,7 +204,9 @@ export default function FaviconsPage() {
 
           <button
             onClick={handleClearAll}
-            className="rounded-md bg-gray-300 px-6 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-400"
+            className="rounded-md bg-gray-300 dark:bg-gray-600 px-6 py-2 text-sm font-semibold
+                       text-gray-800 dark:text-gray-100 
+                       hover:bg-gray-400 dark:hover:bg-gray-500"
           >
             Clear All
           </button>

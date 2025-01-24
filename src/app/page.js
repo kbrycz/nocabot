@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import Link from "next/link";
+import { AuroraText } from "@/components/ui/AuroraText";
 import {
   ArrowsPointingInIcon,
   ScissorsIcon,
@@ -9,8 +10,6 @@ import {
   GlobeAltIcon,
   DevicePhoneMobileIcon,
 } from "@heroicons/react/24/outline";
-
-import { AuroraText } from "@/components/ui/AuroraText";
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
@@ -21,96 +20,103 @@ const actions = [
     title: "Compress Images",
     href: "/compress",
     icon: ArrowsPointingInIcon,
-    iconForeground: "text-purple-700",
-    iconBackground: "bg-purple-50",
+    iconFg: "text-purple-700 dark:text-white",
+    iconBg: "bg-purple-50 dark:bg-purple-900",
     description: "Reduce file sizes while retaining quality for faster load times.",
   },
   {
     title: "Resize Images",
     href: "/resize",
     icon: ScissorsIcon,
-    iconForeground: "text-rose-700",
-    iconBackground: "bg-rose-50",
+    iconFg: "text-rose-700 dark:text-white",
+    iconBg: "bg-rose-50 dark:bg-rose-900",
     description: "Quickly change dimensions or aspect ratios to fit any usage scenario.",
   },
   {
     title: "Convert Images",
     href: "/convert",
     icon: ArrowsRightLeftIcon,
-    iconForeground: "text-sky-700",
-    iconBackground: "bg-sky-50",
+    iconFg: "text-sky-700 dark:text-white",
+    iconBg: "bg-sky-50 dark:bg-sky-900",
     description: "Switch between PNG, JPG, GIF, WebP, and more with a single click.",
   },
   {
     title: "Remove Background",
     href: "/remove-bg",
     icon: PhotoIcon,
-    iconForeground: "text-indigo-700",
-    iconBackground: "bg-indigo-50",
-    description: "Automatically remove backgrounds to highlight your subject (simulated).",
+    iconFg: "text-indigo-700 dark:text-white",
+    iconBg: "bg-indigo-50 dark:bg-indigo-900",
+    description: "Automatically remove backgrounds (simulated).",
   },
   {
     title: "Generate Favicons",
     href: "/favicons",
     icon: GlobeAltIcon,
-    iconForeground: "text-green-700",
-    iconBackground: "bg-green-50",
-    description: "Create multiple favicon sizes and .ico files for perfect branding.",
+    iconFg: "text-green-700 dark:text-white",
+    iconBg: "bg-green-50 dark:bg-green-900",
+    description: "Create multiple favicon sizes (.ico) for perfect branding.",
   },
   {
     title: "App Icon",
     href: "/app-icon",
     icon: DevicePhoneMobileIcon,
-    iconForeground: "text-yellow-700",
-    iconBackground: "bg-yellow-50",
+    iconFg: "text-yellow-700 dark:text-white",
+    iconBg: "bg-yellow-50 dark:bg-yellow-900",
     description: "Transform any image into a 1024×1024 compressed app icon.",
   },
 ];
 
 export default function HomePage() {
   return (
-    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
-      <h1 className="text-3xl font-bold tracking-tight text-center text-gray-800">
+    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white dark:bg-gray-800 p-12 rounded-md border border-gray-200 dark:border-gray-700 shadow dark:shadow-md dark:shadow-black/60 font-sans">
+      <h1 className="text-3xl font-bold tracking-tight text-center text-gray-800 dark:text-gray-100">
         Welcome to <AuroraText className="text-3xl">Nocabot</AuroraText>
       </h1>
-      <p className="mt-2 text-sm text-center text-gray-600">
+
+      <p className="mt-2 text-sm text-center text-gray-600 dark:text-gray-400">
         A suite of easy-to-use image tools for every workflow.
       </p>
 
-      <div className="mt-8 divide-y divide-gray-200 overflow-hidden rounded-lg bg-gray-100 shadow sm:grid sm:grid-cols-2 sm:gap-px sm:divide-y-0">
+      <div className="mt-8 divide-y divide-gray-200 dark:divide-gray-700 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700 shadow dark:shadow-black/50 sm:grid sm:grid-cols-2 sm:gap-px sm:divide-y-0">
         {actions.map((action, idx) => (
           <div
             key={action.title}
             className={classNames(
+              // corners on the top row
               idx === 0 ? "rounded-tl-lg rounded-tr-lg sm:rounded-tr-none" : "",
+              // second in first row => sm:rounded-tr-lg
               idx === 1 ? "sm:rounded-tr-lg" : "",
+              // second-last => sm:rounded-bl-lg
               idx === actions.length - 2 ? "sm:rounded-bl-lg" : "",
-              idx === actions.length - 1
-                ? "rounded-bl-lg rounded-br-lg sm:rounded-bl-none"
-                : "",
-              "group relative bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500"
+              // last => bottom corners
+              idx === actions.length - 1 ? "rounded-bl-lg rounded-br-lg sm:rounded-bl-none" : "",
+              "group relative bg-white dark:bg-gray-800 p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-500 border-b last:border-none border-gray-200 dark:border-gray-700 sm:border-b-0 sm:border-r"
             )}
           >
             <div>
               <span
                 className={classNames(
-                  action.iconBackground,
-                  action.iconForeground,
-                  "inline-flex rounded-lg p-3 ring-4 ring-white"
+                  action.iconBg,
+                  action.iconFg,
+                  "inline-flex rounded-lg p-3 ring-4 ring-white dark:ring-gray-800"
                 )}
               >
-                <action.icon aria-hidden="true" className="h-6 w-6" />
+                <action.icon className="h-6 w-6" aria-hidden="true" />
               </span>
             </div>
+
             <div className="mt-8">
-              <h3 className="text-base font-semibold text-gray-900">
-                <a href={action.href} className="focus:outline-none">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                <Link href={action.href} className="focus:outline-none">
                   <span aria-hidden="true" className="absolute inset-0" />
                   {action.title}
-                </a>
+                </Link>
               </h3>
-              <p className="mt-2 text-sm text-gray-500">{action.description}</p>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                {action.description}
+              </p>
             </div>
+
             <span
               aria-hidden="true"
               className="pointer-events-none absolute right-6 top-6 text-gray-300 group-hover:text-gray-400"

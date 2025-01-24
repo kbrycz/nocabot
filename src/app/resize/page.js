@@ -1,3 +1,4 @@
+// src/app/resize/page.js
 "use client";
 
 import React, { useState } from "react";
@@ -28,6 +29,7 @@ export default function ResizePage() {
       setHeight(Math.round(newW * ratio));
     }
   };
+
   const onChangeHeight = (val) => {
     const newH = parseInt(val || 0, 10);
     setHeight(newH);
@@ -44,16 +46,17 @@ export default function ResizePage() {
   };
 
   const handleResizeAll = async () => {
+    // Clear error message when pressing the main action
+    setErrorMsg(null);
+
     if (globalImages.length === 0) return;
     if (width < 1 || height < 1) {
       setErrorMsg("Width and Height must be greater than 0.");
       return;
     }
     setIsResizing(true);
-    setErrorMsg(null);
     setDidProcess(false);
 
-    // Start a 3-second cooldown
     setIsDisabled(true);
     setTimeout(() => setIsDisabled(false), 3000);
 
@@ -112,6 +115,7 @@ export default function ResizePage() {
   };
 
   const handleDownloadOne = (index) => {
+    setErrorMsg(null); // Clear error if any
     const img = globalImages[index];
     if (!img) return;
     const origName = img.file.name.replace(/\.[^/.]+$/, "");
@@ -124,6 +128,7 @@ export default function ResizePage() {
   };
 
   const handleDownloadAll = async () => {
+    setErrorMsg(null); // Clear error if any
     if (!didProcess || globalImages.length === 0) return;
 
     const zip = new JSZip();
@@ -133,7 +138,6 @@ export default function ResizePage() {
       const img = globalImages[i];
       const response = await fetch(img.url);
       const blob = await response.blob();
-
       const origName = img.file.name.replace(/\.[^/.]+$/, "");
       folder.file(`${origName}_resized.jpg`, blob);
     }
@@ -148,9 +152,11 @@ export default function ResizePage() {
   };
 
   return (
-    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
-      <h1 className="text-3xl font-bold text-center text-gray-800">Resize Images</h1>
-      <p className="mt-2 text-sm text-center text-gray-600">
+    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white dark:bg-gray-800 p-12 rounded-md shadow font-sans">
+      <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-gray-100">
+        Resize Images
+      </h1>
+      <p className="mt-2 text-sm text-center text-gray-600 dark:text-gray-400">
         Set the width and height (lock ratio if you like), then resize them.
       </p>
 
@@ -158,37 +164,39 @@ export default function ResizePage() {
         <div className="mt-4 text-center text-sm text-red-600">{errorMsg}</div>
       )}
 
-      <div className="mt-6 flex flex-col items-center gap-6 sm:flex-row sm:justify-center">
+      <div className="mt-6 flex flex-row flex-nowrap items-center justify-center gap-6">
         {/* Width */}
-        <label className="flex flex-col text-sm text-gray-700">
+        <label className="flex flex-col text-sm text-gray-700 dark:text-gray-200">
           <span className="font-medium mb-1 text-center">Width</span>
           <input
             type="number"
             value={width}
             onChange={(e) => onChangeWidth(e.target.value)}
-            className="block w-24 rounded-md border border-gray-300 px-3 py-1 text-center text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="block w-24 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-1 text-center text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
         </label>
 
         {/* Height */}
-        <label className="flex flex-col text-sm text-gray-700">
+        <label className="flex flex-col text-sm text-gray-700 dark:text-gray-200">
           <span className="font-medium mb-1 text-center">Height</span>
           <input
             type="number"
             value={height}
             onChange={(e) => onChangeHeight(e.target.value)}
-            className="block w-24 rounded-md border border-gray-300 px-3 py-1 text-center text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="block w-24 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-1 text-center text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
         </label>
 
-        {/* Lock Ratio toggle */}
+        {/* Lock ratio */}
         <div className="flex flex-col items-center">
-          <span className="mb-1 text-sm font-medium text-gray-700">Lock Ratio</span>
+          <span className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-200">
+            Lock Ratio
+          </span>
           <Switch
             checked={locked}
             onChange={handleToggleLock}
             className={`${
-              locked ? "bg-blue-600" : "bg-gray-300"
+              locked ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-500"
             } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
           >
             <span
@@ -204,6 +212,10 @@ export default function ResizePage() {
         <GlobalUploader
           didProcess={didProcess}
           onDownloadOne={handleDownloadOne}
+          onNewImages={() => {
+            setErrorMsg(null);
+            setDidProcess(false);
+          }}
         />
       </div>
 
@@ -236,7 +248,7 @@ export default function ResizePage() {
 
           <button
             onClick={handleClearAll}
-            className="rounded-md bg-gray-300 px-6 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-400"
+            className="rounded-md bg-gray-300 dark:bg-gray-600 px-6 py-2 text-sm font-semibold text-gray-800 dark:text-gray-100 hover:bg-gray-400 dark:hover:bg-gray-500"
           >
             Clear All
           </button>

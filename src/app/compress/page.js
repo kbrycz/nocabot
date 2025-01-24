@@ -12,17 +12,17 @@ export default function CompressPage() {
 
   const [sliderValue, setSliderValue] = useState(5);
   const [isCompressing, setIsCompressing] = useState(false);
-  const [isDisabled, setIsDisabled] = useState(false); // cooldown
+  const [isDisabled, setIsDisabled] = useState(false);
   const [didProcess, setDidProcess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
   const handleCompressAll = async () => {
+    setErrorMsg(null); // Clear error on main action
+
     if (globalImages.length === 0) return;
-    setErrorMsg(null);
     setDidProcess(false);
     setIsCompressing(true);
 
-    // Start a 3-second cooldown
     setIsDisabled(true);
     setTimeout(() => setIsDisabled(false), 3000);
 
@@ -78,6 +78,7 @@ export default function CompressPage() {
   };
 
   const handleDownloadOne = (index) => {
+    setErrorMsg(null);
     const img = globalImages[index];
     if (!img) return;
     const origName = img.file.name.replace(/\.[^/.]+$/, "");
@@ -90,6 +91,7 @@ export default function CompressPage() {
   };
 
   const handleDownloadAll = async () => {
+    setErrorMsg(null);
     if (!didProcess || globalImages.length === 0) return;
 
     const zip = new JSZip();
@@ -113,9 +115,11 @@ export default function CompressPage() {
   };
 
   return (
-    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
-      <h1 className="text-3xl font-bold text-center text-gray-800">Compress Images</h1>
-      <p className="mt-2 text-sm text-center text-gray-600">
+    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white dark:bg-gray-800 p-12 rounded-md shadow font-sans">
+      <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-gray-100">
+        Compress Images
+      </h1>
+      <p className="mt-2 text-sm text-center text-gray-600 dark:text-gray-400">
         Upload up to 5 images, adjust the slider, then compress.
       </p>
 
@@ -123,9 +127,8 @@ export default function CompressPage() {
         <div className="mt-4 text-center text-sm text-red-600">{errorMsg}</div>
       )}
 
-      {/* The slider UI */}
       <div className="mt-6 flex flex-col items-center gap-2">
-        <div className="flex w-full max-w-sm items-center justify-between px-2 text-sm font-medium text-gray-700">
+        <div className="flex w-full max-w-sm items-center justify-between px-2 text-sm font-medium text-gray-700 dark:text-gray-200">
           <span>Smaller file size</span>
           <span>Larger file size</span>
         </div>
@@ -174,6 +177,10 @@ export default function CompressPage() {
         <GlobalUploader
           didProcess={didProcess}
           onDownloadOne={handleDownloadOne}
+          onNewImages={() => {
+            setErrorMsg(null);
+            setDidProcess(false);
+          }}
         />
       </div>
 
@@ -206,7 +213,7 @@ export default function CompressPage() {
 
           <button
             onClick={handleClearAll}
-            className="rounded-md bg-gray-300 px-6 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-400"
+            className="rounded-md bg-gray-300 dark:bg-gray-600 px-6 py-2 text-sm font-semibold text-gray-800 dark:text-gray-100 hover:bg-gray-400 dark:hover:bg-gray-500"
           >
             Clear All
           </button>

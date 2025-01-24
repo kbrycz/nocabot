@@ -1,3 +1,4 @@
+// src/app/convert/page.js
 "use client";
 
 import React, { useState } from "react";
@@ -16,12 +17,12 @@ export default function ConvertPage() {
   const [errorMsg, setErrorMsg] = useState(null);
 
   const handleConvertAll = async () => {
+    setErrorMsg(null);
+
     if (globalImages.length === 0) return;
     setIsConverting(true);
     setDidProcess(false);
-    setErrorMsg(null);
 
-    // 3-sec cooldown
     setIsDisabled(true);
     setTimeout(() => setIsDisabled(false), 3000);
 
@@ -79,6 +80,7 @@ export default function ConvertPage() {
   };
 
   const handleDownloadOne = (index) => {
+    setErrorMsg(null);
     const img = globalImages[index];
     if (!img) return;
     const origName = img.file.name.replace(/\.[^/.]+$/, "");
@@ -91,6 +93,7 @@ export default function ConvertPage() {
   };
 
   const handleDownloadAll = async () => {
+    setErrorMsg(null);
     if (!didProcess || globalImages.length === 0) return;
 
     const zip = new JSZip();
@@ -100,7 +103,6 @@ export default function ConvertPage() {
       const img = globalImages[i];
       const response = await fetch(img.url);
       const blob = await response.blob();
-
       const origName = img.file.name.replace(/\.[^/.]+$/, "");
       folder.file(`${origName}_converted.${targetFormat}`, blob);
     }
@@ -115,9 +117,11 @@ export default function ConvertPage() {
   };
 
   return (
-    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
-      <h1 className="text-3xl font-bold text-center text-gray-800">Convert Images</h1>
-      <p className="mt-2 text-sm text-center text-gray-600">
+    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white dark:bg-gray-800 p-12 rounded-md shadow font-sans">
+      <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-gray-100">
+        Convert Images
+      </h1>
+      <p className="mt-2 text-sm text-center text-gray-600 dark:text-gray-400">
         Upload up to 5 images and choose a new format to convert them.
       </p>
 
@@ -126,7 +130,7 @@ export default function ConvertPage() {
       )}
 
       <div className="mt-6 flex justify-center">
-        <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
           Convert to:
           <select
             value={targetFormat}
@@ -135,7 +139,12 @@ export default function ConvertPage() {
               setDidProcess(false);
               setErrorMsg(null);
             }}
-            className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm shadow-sm"
+            className="
+              rounded-md border border-gray-300 dark:border-gray-600
+              bg-white dark:bg-gray-700
+              px-3 py-1 text-sm shadow-sm
+              font-sans                 /* Force your Geist or default sans */
+            "
           >
             <option value="png">PNG</option>
             <option value="jpg">JPG</option>
@@ -151,6 +160,10 @@ export default function ConvertPage() {
         <GlobalUploader
           didProcess={didProcess}
           onDownloadOne={handleDownloadOne}
+          onNewImages={() => {
+            setErrorMsg(null);
+            setDidProcess(false);
+          }}
         />
       </div>
 
@@ -159,11 +172,14 @@ export default function ConvertPage() {
           <button
             onClick={handleConvertAll}
             disabled={isDisabled}
-            className={`rounded-md px-6 py-2 text-sm font-semibold text-white ${
-              isDisabled
-                ? "bg-indigo-300 cursor-not-allowed"
-                : "bg-indigo-600 hover:bg-indigo-500"
-            }`}
+            className={`
+              rounded-md px-6 py-2 text-sm font-semibold text-white
+              ${
+                isDisabled
+                  ? "bg-indigo-300 cursor-not-allowed"
+                  : "bg-indigo-600 hover:bg-indigo-500"
+              }
+            `}
           >
             {isConverting
               ? "Converting..."
@@ -183,7 +199,7 @@ export default function ConvertPage() {
 
           <button
             onClick={handleClearAll}
-            className="rounded-md bg-gray-300 px-6 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-400"
+            className="rounded-md bg-gray-300 dark:bg-gray-600 px-6 py-2 text-sm font-semibold text-gray-800 dark:text-gray-100 hover:bg-gray-400 dark:hover:bg-gray-500"
           >
             Clear All
           </button>

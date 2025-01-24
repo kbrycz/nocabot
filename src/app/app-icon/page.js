@@ -7,14 +7,10 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import GlobalUploader from "@/components/ui/GlobalUploader";
 
-/**
- * This page sends all uploaded images to /app-icon,
- * which resizes them to 1024x1024 and compresses at level=5.
- */
 export default function AppIconPage() {
   const { globalImages, setGlobalImages, clearAllImages } = useImageContext();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isDisabled, setIsDisabled] = useState(false); // 3-sec cooldown
+  const [isDisabled, setIsDisabled] = useState(false);
   const [didProcess, setDidProcess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
@@ -24,7 +20,6 @@ export default function AppIconPage() {
     setErrorMsg(null);
     setDidProcess(false);
 
-    // Start cooldown so user can't re-click
     setIsDisabled(true);
     setTimeout(() => setIsDisabled(false), 3000);
 
@@ -48,7 +43,6 @@ export default function AppIconPage() {
         throw new Error("No images returned from server");
       }
 
-      // Build new array with updated "url"
       const updated = globalImages.map((img, idx) => {
         const srv = data.images[idx];
         if (srv?.icon_b64) {
@@ -72,7 +66,7 @@ export default function AppIconPage() {
             file: newFile,
           };
         }
-        return img; // fallback if something fails
+        return img;
       });
 
       setGlobalImages(updated);
@@ -93,13 +87,12 @@ export default function AppIconPage() {
     if (!img) return;
     const link = document.createElement("a");
     link.href = img.url;
-    link.download = img.file.name; // includes _app_icon
+    link.download = img.file.name;
     link.click();
   };
 
   const handleDownloadAll = async () => {
     if (!didProcess || globalImages.length === 0) return;
-
     const zip = new JSZip();
     const folder = zip.folder("app_icons");
 
@@ -120,9 +113,11 @@ export default function AppIconPage() {
   };
 
   return (
-    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white p-12 rounded-md shadow font-sans">
-      <h1 className="text-3xl font-bold text-center text-gray-800">App Icon</h1>
-      <p className="mt-2 text-sm text-center text-gray-600">
+    <div className="mx-auto mt-10 mb-10 w-full sm:w-[95%] md:w-[85%] bg-white dark:bg-gray-800 p-12 rounded-md shadow font-sans">
+      <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-gray-100">
+        App Icon
+      </h1>
+      <p className="mt-2 text-sm text-center text-gray-600 dark:text-gray-400">
         Turn any image into a 1024×1024 compressed app icon (quality=5).
       </p>
 
@@ -131,7 +126,11 @@ export default function AppIconPage() {
       )}
 
       <div className="mt-6">
-        <GlobalUploader didProcess={didProcess} onDownloadOne={handleDownloadOne} />
+        <GlobalUploader
+          didProcess={didProcess}
+          onDownloadOne={handleDownloadOne}
+          onNewImages={() => setDidProcess(false)}
+        />
       </div>
 
       {globalImages.length > 0 && (
@@ -163,7 +162,7 @@ export default function AppIconPage() {
 
           <button
             onClick={handleClearAll}
-            className="rounded-md bg-gray-300 px-6 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-400"
+            className="rounded-md bg-gray-300 dark:bg-gray-600 px-6 py-2 text-sm font-semibold text-gray-800 dark:text-gray-100 hover:bg-gray-400 dark:hover:bg-gray-500"
           >
             Clear All
           </button>
