@@ -48,7 +48,7 @@ const actions = [
     icon: PhotoIcon,
     iconFg: "text-indigo-700 dark:text-white",
     iconBg: "bg-indigo-50 dark:bg-indigo-900",
-    description: "Automatically remove backgrounds (Coming soon).",
+    description: "Automatically remove backgrounds.",
   },
   {
     title: "Generate Favicons",
