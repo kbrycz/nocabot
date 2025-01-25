@@ -87,6 +87,11 @@ export default function RemoveBGPage() {
         if (msg.includes("Failed to fetch") || msg.includes("Load failed")) {
           msg = "Could not connect to the server. Please try again later.";
         }
+        // Hide the raw HTML for 502 or bad gateway
+        if (msg.includes("502") || msg.includes("Bad Gateway") || msg.includes("<html>")) {
+          msg = "Server is busy or unreachable. Please try again later.";
+        }
+
         setErrorMsg(msg);
       }
     } finally {
@@ -227,7 +232,6 @@ export default function RemoveBGPage() {
                 <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
               </div>
 
-              {/* We removed the progress bar. Extra padding in place of it */}
               <button
                 onClick={handleCancel}
                 className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500"
